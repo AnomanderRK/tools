@@ -805,8 +805,161 @@ echo
 # ═══════════════════════════════════════════════════════════════════════════════
 say "Windows Terminal theme"
 
+say "Terminal theme"
+
 if ! grep -qi microsoft /proc/version 2>/dev/null; then
-  info "Not WSL — skipping Windows Terminal config"
+  # ── Bare Linux — detect terminal emulator and write its theme config ────────
+  _apply_linux_terminal_theme() {
+    # Build color arrays per theme
+    case "$THEME" in
+      nord)
+        BG="#2E3440"; FG="#D8DEE9"; BOLD_FG="#ECEFF4"
+        BLACK="#3B4252"; RED="#BF616A"; GREEN="#A3BE8C"; YELLOW="#EBCB8B"
+        BLUE="#81A1C1"; MAGENTA="#B48EAD"; CYAN="#88C0D0"; WHITE="#E5E9F0"
+        B_BLACK="#4C566A"; B_RED="#BF616A"; B_GREEN="#A3BE8C"; B_YELLOW="#EBCB8B"
+        B_BLUE="#81A1C1"; B_MAGENTA="#B48EAD"; B_CYAN="#8FBCBB"; B_WHITE="#ECEFF4"
+        CURSOR="#D8DEE9";;
+      catppuccin)
+        BG="#1E1E2E"; FG="#CDD6F4"; BOLD_FG="#CDD6F4"
+        BLACK="#45475A"; RED="#F38BA8"; GREEN="#A6E3A1"; YELLOW="#F9E2AF"
+        BLUE="#89B4FA"; MAGENTA="#CBA6F7"; CYAN="#94E2D5"; WHITE="#BAC2DE"
+        B_BLACK="#585B70"; B_RED="#F38BA8"; B_GREEN="#A6E3A1"; B_YELLOW="#F9E2AF"
+        B_BLUE="#89B4FA"; B_MAGENTA="#CBA6F7"; B_CYAN="#94E2D5"; B_WHITE="#A6ADC8"
+        CURSOR="#F5C2E7";;
+      tokyo)
+        BG="#1A1B26"; FG="#C0CAF5"; BOLD_FG="#C0CAF5"
+        BLACK="#15161E"; RED="#F7768E"; GREEN="#9ECE6A"; YELLOW="#E0AF68"
+        BLUE="#7AA2F7"; MAGENTA="#BB9AF7"; CYAN="#7DCFFF"; WHITE="#A9B1D6"
+        B_BLACK="#414868"; B_RED="#F7768E"; B_GREEN="#9ECE6A"; B_YELLOW="#E0AF68"
+        B_BLUE="#7AA2F7"; B_MAGENTA="#BB9AF7"; B_CYAN="#7DCFFF"; B_WHITE="#ACB0D0"
+        CURSOR="#C0CAF5";;
+      solarized)
+        BG="#FDF6E3"; FG="#657B83"; BOLD_FG="#657B83"
+        BLACK="#073642"; RED="#DC322F"; GREEN="#859900"; YELLOW="#B58900"
+        BLUE="#268BD2"; MAGENTA="#D33682"; CYAN="#2AA198"; WHITE="#EEE8D5"
+        B_BLACK="#002B36"; B_RED="#CB4B16"; B_GREEN="#586E75"; B_YELLOW="#657B83"
+        B_BLUE="#839496"; B_MAGENTA="#6C71C4"; B_CYAN="#93A1A1"; B_WHITE="#FDF6E3"
+        CURSOR="#657B83";;
+      *)
+        info "Classic theme — no terminal color config needed"; return;;
+    esac
+
+    # ── GNOME Terminal ──────────────────────────────────────────────────────
+    if command -v gsettings &>/dev/null && gsettings list-schemas 2>/dev/null | grep -q "org.gnome.Terminal"; then
+      echo -en "  ${BOLD}GNOME Terminal${RESET}... "
+      PROFILE_LIST=$(gsettings get org.gnome.Terminal.ProfilesList list 2>/dev/null)
+      DEFAULT_ID=$(gsettings get org.gnome.Terminal.ProfilesList default 2>/dev/null | tr -d "'")
+      if [[ -n "$DEFAULT_ID" ]]; then
+        GSCHEMA="org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:${DEFAULT_ID}/"
+        gsettings set $GSCHEMA background-color           "'$BG'"
+        gsettings set $GSCHEMA foreground-color           "'$FG'"
+        gsettings set $GSCHEMA bold-color                 "'$BOLD_FG'"
+        gsettings set $GSCHEMA bold-color-same-as-fg      "false"
+        gsettings set $GSCHEMA use-theme-colors           "false"
+        gsettings set $GSCHEMA use-transparent-background "true"
+        gsettings set $GSCHEMA background-transparency-percent "5"
+        gsettings set $GSCHEMA cursor-colors-set          "true"
+        gsettings set $GSCHEMA cursor-background-color    "'$CURSOR'"
+        gsettings set $GSCHEMA palette \
+          "['$BLACK','$RED','$GREEN','$YELLOW','$BLUE','$MAGENTA','$CYAN','$WHITE','$B_BLACK','$B_RED','$B_GREEN','$B_YELLOW','$B_BLUE','$B_MAGENTA','$B_CYAN','$B_WHITE']"
+        ok "Applied $THEME_LABEL to default GNOME Terminal profile"
+      else
+        warn "No default GNOME Terminal profile found"
+      fi
+
+    # ── Tilix ──────────────────────────────────────────────────────────────
+    elif command -v tilix &>/dev/null && command -v dconf &>/dev/null; then
+      echo -en "  ${BOLD}Tilix${RESET}... "
+      TILIX_PATH="/com/gexperts/Tilix/profiles/"
+      DEFAULT_ID=$(dconf read ${TILIX_PATH}default 2>/dev/null | tr -d "'")
+      [[ -z "$DEFAULT_ID" ]] && DEFAULT_ID="2b7c4080-0ddd-46c5-8f23-563fd3ba789d"
+      TP="${TILIX_PATH}${DEFAULT_ID}/"
+      dconf write ${TP}background-color    "'$BG'"
+      dconf write ${TP}foreground-color    "'$FG'"
+      dconf write ${TP}use-theme-colors    "false"
+      dconf write ${TP}use-transparent-background "true"
+      dconf write ${TP}background-transparency-percent "5"
+      dconf write ${TP}palette \
+        "['$BLACK','$RED','$GREEN','$YELLOW','$BLUE','$MAGENTA','$CYAN','$WHITE','$B_BLACK','$B_RED','$B_GREEN','$B_YELLOW','$B_BLUE','$B_MAGENTA','$B_CYAN','$B_WHITE']"
+      ok "Applied $THEME_LABEL to default Tilix profile"
+
+    # ── Kitty ──────────────────────────────────────────────────────────────
+    elif command -v kitty &>/dev/null; then
+      echo -en "  ${BOLD}Kitty${RESET}... "
+      KITTY_CONF="${XDG_CONFIG_HOME:-$HOME/.config}/kitty/kitty.conf"
+      mkdir -p "$(dirname "$KITTY_CONF")"
+      THEME_CONF="${XDG_CONFIG_HOME:-$HOME/.config}/kitty/theme.conf"
+      cat > "$THEME_CONF" << KITTYEOF
+# $THEME_LABEL — generated by setup-wizard.sh
+background            $BG
+foreground            $FG
+cursor                $CURSOR
+color0  $BLACK
+color1  $RED
+color2  $GREEN
+color3  $YELLOW
+color4  $BLUE
+color5  $MAGENTA
+color6  $CYAN
+color7  $WHITE
+color8  $B_BLACK
+color9  $B_RED
+color10 $B_GREEN
+color11 $B_YELLOW
+color12 $B_BLUE
+color13 $B_MAGENTA
+color14 $B_CYAN
+color15 $B_WHITE
+KITTYEOF
+      # Wire include into kitty.conf if not already there
+      if ! grep -q "include theme.conf" "$KITTY_CONF" 2>/dev/null; then
+        echo "include theme.conf" >> "$KITTY_CONF"
+      fi
+      ok "Applied $THEME_LABEL — reload kitty with Ctrl+Shift+F5"
+
+    # ── Xresources fallback (xterm, urxvt) ─────────────────────────────────
+    elif [[ -n "${DISPLAY:-}" ]]; then
+      echo -en "  ${BOLD}Xresources${RESET}... "
+      XRES="$HOME/.Xresources"
+      # Remove previous wizard block if present
+      sed -i '/! >>> dev-setup theme/,/! <<< dev-setup theme/d' "$XRES" 2>/dev/null || true
+      cat >> "$XRES" << XREOF
+! >>> dev-setup theme: $THEME_LABEL
+*background:  $BG
+*foreground:  $FG
+*cursorColor: $CURSOR
+*color0:  $BLACK
+*color1:  $RED
+*color2:  $GREEN
+*color3:  $YELLOW
+*color4:  $BLUE
+*color5:  $MAGENTA
+*color6:  $CYAN
+*color7:  $WHITE
+*color8:  $B_BLACK
+*color9:  $B_RED
+*color10: $B_GREEN
+*color11: $B_YELLOW
+*color12: $B_BLUE
+*color13: $B_MAGENTA
+*color14: $B_CYAN
+*color15: $B_WHITE
+! <<< dev-setup theme
+XREOF
+      command -v xrdb &>/dev/null && xrdb -merge "$XRES"
+      ok "Applied $THEME_LABEL to ~/.Xresources"
+
+    else
+      warn "No supported terminal emulator detected (GNOME Terminal, Tilix, Kitty, xterm)"
+      info "Supported: GNOME Terminal, Tilix, Kitty, xterm/urxvt"
+    fi
+  }
+
+  if $DRY_RUN; then
+    info "[dry-run] would apply $THEME_LABEL to Linux terminal emulator"
+  else
+    _apply_linux_terminal_theme
+  fi
 else
   WT_WIN_USER=$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r\n' || true)
   WT_SETTINGS_PATH="/mnt/c/Users/${WT_WIN_USER}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
