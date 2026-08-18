@@ -135,7 +135,7 @@ Already-installed tools are detected and skipped.
 | `~/.config/nvim/lua/config/keymaps.lua` | VSCode-familiar keybindings |
 | `~/.config/nvim/lua/plugins/colorscheme.lua` | Theme (matches your shell theme) |
 | `~/.config/nvim/lua/plugins/lsp.lua` | Mason, LSPs, conform, nvim-lint |
-| `~/.config/nvim/lua/plugins/tools.lua` | toggleterm, Telescope, LazyGit, Copilot |
+| `~/.config/nvim/lua/plugins/tools.lua` | toggleterm (+ Claude Code float), Telescope, LazyGit, Copilot |
 | `~/.config/dev-setup/bashrc_neovim.sh` | Shell aliases and functions |
 | `~/.bashrc` | Gets one `source` line appended |
 

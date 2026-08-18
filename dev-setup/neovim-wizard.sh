@@ -388,9 +388,6 @@ else
   LAZYGIT_KEYMAP=''
 fi
 
-# The Claude terminal is defined inside VimEnter so toggleterm is guaranteed
-# loaded before we call Terminal:new(). Without this, the keybind fires before
-# the plugin is ready and the float never opens.
 KEYMAPS_LUA="-- Keymaps — VSCode-familiar bindings layered on LazyVim defaults
 local map = vim.keymap.set
 
@@ -402,7 +399,7 @@ map(\"n\", \"<S-h>\", \"<cmd>bprevious<cr>\", { desc = \"Prev buffer\" })
 map(\"n\", \"<S-l>\", \"<cmd>bnext<cr>\",     { desc = \"Next buffer\" })
 map(\"n\", \"<leader>q\", \"<cmd>bd<cr>\",    { desc = \"Close buffer\" })
 
--- ── File picker / search (Ctrl+P / Ctrl+Shift+F like VSCode) ─────────────────
+-- ── File picker / search ─────────────────────────────────────────────────────
 map(\"n\", \"<C-p>\", \"<cmd>Telescope find_files<cr>\", { desc = \"Find files (Ctrl+P)\" })
 map(\"n\", \"<C-S-p>\", \"<cmd>Telescope commands<cr>\",  { desc = \"Commands palette\" })
 map(\"n\", \"<leader>/\", \"<cmd>Telescope live_grep<cr>\",  { desc = \"Search in files\" })
@@ -425,41 +422,6 @@ vim.api.nvim_create_autocmd(\"FileType\", {
   callback = function(event)
     vim.keymap.set(\"n\", \"q\", \"<cmd>close<cr>\",
       { buffer = event.buf, silent = true, desc = \"Close panel\" })
-  end,
-})
-
--- ── Claude Code float terminal ────────────────────────────────────────────────
--- Defined inside VimEnter so toggleterm is fully loaded before Terminal:new().
--- <Space>cc toggles the float from any buffer or from inside the terminal itself.
-vim.api.nvim_create_autocmd(\"VimEnter\", {
-  once = true,
-  callback = function()
-    local ok, Terminal = pcall(require, \"toggleterm.terminal\")
-    if not ok then return end
-
-    local claude_term = Terminal.Terminal:new({
-      cmd        = \"claude\",
-      direction  = \"float\",
-      float_opts = {
-        border   = \"rounded\",
-        width    = math.floor(vim.o.columns * 0.92),
-        height   = math.floor(vim.o.lines   * 0.88),
-        row      = math.floor(vim.o.lines   * 0.05),
-        col      = math.floor(vim.o.columns * 0.04),
-      },
-      on_open = function(term)
-        vim.cmd(\"startinsert!\")
-        -- Double-Esc leaves terminal insert mode without closing the float
-        vim.api.nvim_buf_set_keymap(term.bufnr, \"t\", \"<Esc><Esc>\",
-          \"<C-\\\\><C-n>\", { noremap = true, silent = true })
-      end,
-      hidden = true,
-    })
-
-    map(\"n\", \"<leader>cc\", function() claude_term:toggle() end,
-      { desc = \"Claude Code (float)\" })
-    map(\"t\", \"<leader>cc\", function() claude_term:toggle() end,
-      { desc = \"Claude Code (hide)\" })
   end,
 })
 $LAZYGIT_KEYMAP
@@ -793,12 +755,39 @@ TOOLS_LUA="return {
     version = \"*\",
     keys = {
       { \"<C-t>\", \"<cmd>ToggleTerm direction=horizontal<cr>\", desc = \"Toggle terminal\" },
+      { \"<leader>cc\", desc = \"Claude Code (float)\" },
     },
     opts = {
-      size            = 15,      -- terminal height (horizontal split)
+      size            = 15,
       shade_terminals = false,
       start_in_insert = true,
     },
+    config = function(_, opts)
+      require(\"toggleterm\").setup(opts)
+
+      local Terminal = require(\"toggleterm.terminal\").Terminal
+      local claude_term = Terminal:new({
+        cmd        = \"claude\",
+        direction  = \"float\",
+        float_opts = {
+          border = \"rounded\",
+          width  = math.floor(vim.o.columns * 0.92),
+          height = math.floor(vim.o.lines   * 0.88),
+          row    = math.floor(vim.o.lines   * 0.05),
+          col    = math.floor(vim.o.columns * 0.04),
+        },
+        on_open = function(term)
+          vim.cmd(\"startinsert!\")
+          vim.api.nvim_buf_set_keymap(term.bufnr, \"t\", \"<Esc><Esc>\",
+            \"<C-\\\\\\\\><C-n>\", { noremap = true, silent = true })
+        end,
+        hidden = true,
+      })
+
+      local toggle = function() claude_term:toggle() end
+      vim.keymap.set(\"n\", \"<leader>cc\", toggle, { desc = \"Claude Code (float)\" })
+      vim.keymap.set(\"t\", \"<leader>cc\", toggle, { desc = \"Claude Code (hide)\" })
+    end,
   },
 
   -- Fuzzy finder: Telescope
@@ -1109,7 +1098,7 @@ echo -e "    ${CYAN}Ctrl+P${RESET}         Find file                   ${DIM}(li
 echo -e "    ${CYAN}Space+/${RESET}        Search in files             ${DIM}(live grep)${RESET}"
 echo -e "    ${CYAN}Space+e${RESET}        Toggle file explorer         ${DIM}(Space then e)${RESET}"
 echo -e "    ${CYAN}Ctrl+T${RESET}         Toggle terminal (split)      ${DIM}(like VSCode)${RESET}"
-echo -e "    ${CYAN}Space cc${RESET}       Claude Code float            ${DIM}(wait for plugins to load)${RESET}"
+echo -e "    ${CYAN}Space cc${RESET}       Claude Code float"
 echo -e "    ${CYAN}F12${RESET}            Go to definition"
 echo -e "    ${CYAN}F2${RESET}             Rename symbol"
 echo -e "    ${CYAN}Ctrl+.${RESET}         Code actions"
