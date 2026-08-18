@@ -135,7 +135,8 @@ Already-installed tools are detected and skipped.
 | `~/.config/nvim/lua/config/keymaps.lua` | VSCode-familiar keybindings |
 | `~/.config/nvim/lua/plugins/colorscheme.lua` | Theme (matches your shell theme) |
 | `~/.config/nvim/lua/plugins/lsp.lua` | Mason, LSPs, conform, nvim-lint |
-| `~/.config/nvim/lua/plugins/tools.lua` | toggleterm (+ Claude Code float), Telescope, LazyGit, Copilot |
+| `~/.config/nvim/lua/plugins/tools.lua` | toggleterm, Telescope, LazyGit, Copilot |
+| `~/.config/nvim/lua/plugins/extras.lua` | claudecode.nvim, markdown, surround, todo, trouble, diffview, oil, typescript-tools |
 | `~/.config/dev-setup/bashrc_neovim.sh` | Shell aliases and functions |
 | `~/.bashrc` | Gets one `source` line appended |
 
@@ -162,23 +163,28 @@ Already-installed tools are detected and skipped.
 
 ### Claude Code integration
 
-Three ways to use Claude Code with Neovim:
+claudecode.nvim connects Neovim to the Claude Code CLI using the same protocol
+as the official VSCode/JetBrains extensions. Claude is always aware of your
+current file and selection — no copy-paste needed.
 
 ```bash
-# 1. From any terminal — unchanged from shell-wizard
-cc my-project           # cd + venv + claude
-
-# 2. cd + venv + nvim, then <Space>cc inside editor
+# Open Neovim in a project
 ccnvim my-project       # cd + venv + nvim .
-                        # then press <Space>cc for Claude Code float
-
-# 3. Already inside nvim — press <Space>cc
-#    Opens a persistent floating terminal running claude
-#    Press <Space>cc again to hide/show it
-#    Press <Esc><Esc> to exit insert mode without closing
+# Then use Space+cc to open Claude — it already knows your files
 ```
 
-The Claude Code terminal is a persistent PTY — it keeps its session state when hidden and re-shown.
+| Key | Action |
+|---|---|
+| `<Space>cc` | Toggle Claude window |
+| `<Space>cs` | Send visual selection to Claude |
+| `<Space>cb` | Add current buffer to Claude's context |
+| `<Space>ca` | Accept Claude's proposed diff |
+| `<Space>cd` | Reject Claude's proposed diff |
+| `<Space>cr` | Resume last session |
+| `<Space>cm` | Select model |
+
+When Claude proposes code changes, they appear as a side-by-side diff.
+Accept with `<Space>ca` (or `:w`), reject with `<Space>cd` (or `:q`).
 
 ---
 

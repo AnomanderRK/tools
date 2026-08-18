@@ -749,45 +749,18 @@ else
 fi
 
 TOOLS_LUA="return {
-  -- Terminal: <C-t> for a split terminal, <Space>cc for Claude Code float
+  -- Split terminal: <C-t>
   {
     \"akinsho/toggleterm.nvim\",
     version = \"*\",
     keys = {
       { \"<C-t>\", \"<cmd>ToggleTerm direction=horizontal<cr>\", desc = \"Toggle terminal\" },
-      { \"<leader>cc\", desc = \"Claude Code (float)\" },
     },
     opts = {
       size            = 15,
       shade_terminals = false,
       start_in_insert = true,
     },
-    config = function(_, opts)
-      require(\"toggleterm\").setup(opts)
-
-      local Terminal = require(\"toggleterm.terminal\").Terminal
-      local claude_term = Terminal:new({
-        cmd        = \"claude\",
-        direction  = \"float\",
-        float_opts = {
-          border = \"rounded\",
-          width  = math.floor(vim.o.columns * 0.92),
-          height = math.floor(vim.o.lines   * 0.88),
-          row    = math.floor(vim.o.lines   * 0.05),
-          col    = math.floor(vim.o.columns * 0.04),
-        },
-        on_open = function(term)
-          vim.cmd(\"startinsert!\")
-          vim.api.nvim_buf_set_keymap(term.bufnr, \"t\", \"<Esc><Esc>\",
-            \"<C-\\\\\\\\><C-n>\", { noremap = true, silent = true })
-        end,
-        hidden = true,
-      })
-
-      local toggle = function() claude_term:toggle() end
-      vim.keymap.set(\"n\", \"<leader>cc\", toggle, { desc = \"Claude Code (float)\" })
-      vim.keymap.set(\"t\", \"<leader>cc\", toggle, { desc = \"Claude Code (hide)\" })
-    end,
   },
 
   -- Fuzzy finder: Telescope
@@ -969,6 +942,45 @@ EXTRAS_LUA='return {
       },
     },
   },
+
+  -- Claude Code IDE integration: context-aware, diff accept/reject, selection send
+  {
+    "coder/claudecode.nvim",
+    dependencies = { "folke/snacks.nvim" },
+    event = "VeryLazy",
+    opts = {
+      auto_start      = true,
+      track_selection = true,
+      terminal = {
+        split_side             = "right",
+        split_width_percentage = 0.35,
+        provider               = "snacks",
+        auto_close             = true,
+        auto_insert            = true,
+        snacks_win_opts = {
+          position = "float",
+          width    = 0.92,
+          height   = 0.88,
+          border   = "rounded",
+          backdrop = 80,
+        },
+      },
+      diff_opts = {
+        layout               = "vertical",
+        auto_resize_terminal = true,
+      },
+    },
+    keys = {
+      { "<leader>cc", "<cmd>ClaudeCode<cr>",            desc = "Claude Code (toggle)" },
+      { "<leader>cf", "<cmd>ClaudeCodeFocus<cr>",       desc = "Claude Code (focus)" },
+      { "<leader>cr", "<cmd>ClaudeCode --resume<cr>",   desc = "Claude Code (resume)" },
+      { "<leader>cb", "<cmd>ClaudeCodeAdd %<cr>",       desc = "Claude add buffer" },
+      { "<leader>cs", "<cmd>ClaudeCodeSend<cr>",        mode = "v", desc = "Claude send selection" },
+      { "<leader>ca", "<cmd>ClaudeCodeDiffAccept<cr>",  desc = "Claude accept diff" },
+      { "<leader>cd", "<cmd>ClaudeCodeDiffDeny<cr>",    desc = "Claude reject diff" },
+      { "<leader>cm", "<cmd>ClaudeCodeSelectModel<cr>", desc = "Claude select model" },
+    },
+  },
 }
 '
 write_file "$HOME/.config/nvim/lua/plugins/extras.lua" "$EXTRAS_LUA"
@@ -1098,7 +1110,11 @@ echo -e "    ${CYAN}Ctrl+P${RESET}         Find file                   ${DIM}(li
 echo -e "    ${CYAN}Space+/${RESET}        Search in files             ${DIM}(live grep)${RESET}"
 echo -e "    ${CYAN}Space+e${RESET}        Toggle file explorer         ${DIM}(Space then e)${RESET}"
 echo -e "    ${CYAN}Ctrl+T${RESET}         Toggle terminal (split)      ${DIM}(like VSCode)${RESET}"
-echo -e "    ${CYAN}Space cc${RESET}       Claude Code float"
+echo -e "    ${CYAN}Space cc${RESET}       Toggle Claude Code"
+echo -e "    ${CYAN}Space cs${RESET}       Send selection to Claude     ${DIM}(Visual mode)${RESET}"
+echo -e "    ${CYAN}Space cb${RESET}       Add current buffer to Claude"
+echo -e "    ${CYAN}Space ca${RESET}       Accept Claude diff"
+echo -e "    ${CYAN}Space cd${RESET}       Reject Claude diff"
 echo -e "    ${CYAN}F12${RESET}            Go to definition"
 echo -e "    ${CYAN}F2${RESET}             Rename symbol"
 echo -e "    ${CYAN}Ctrl+.${RESET}         Code actions"

@@ -179,22 +179,109 @@ Installed servers:
 | Key | Action |
 |---|---|
 | `Ctrl+T` | Toggle terminal (horizontal split at bottom) |
-| `<Space>cc` | Claude Code in a large floating window |
-| `Esc Esc` (in terminal) | Leave terminal insert mode (float stays open) |
-| `<Space>cc` (in terminal) | Hide the Claude float |
-| `i` or `a` (in terminal) | Re-enter terminal insert mode |
 | `:terminal` | Open a terminal in a new buffer |
 
-Inside the terminal you can run any shell command, use your `cc` / `ccnvim`
-functions, git, etc. — it's a full shell.
+Inside the terminal you can run any shell command, git, tests, etc. — it's a full shell.
 
-**Example — run tests without leaving Neovim:**
-`Ctrl+T` opens a split at the bottom. Type `pytest tests/` and see output inline.
-`Ctrl+T` again to hide it; your editor state is untouched.
+---
 
-**Example — ask Claude about the code you're looking at:**
-`<Space>cc` opens Claude Code in a large float. Paste a snippet, ask a question,
-then `<Space>cc` again to hide and go back to editing. The session persists.
+## Claude Code integration
+
+claudecode.nvim connects Neovim directly to the Claude Code CLI using the same
+protocol as the official VSCode and JetBrains extensions. Claude is always aware
+of what file you're in, what you've selected, and where your cursor is — no
+manual copy-paste needed.
+
+### How it works
+
+When you open Neovim, a local WebSocket server starts in the background.
+When you run `:ClaudeCode`, the Claude CLI connects to it and the two stay in
+sync: your current file, cursor position, and any visual selection are sent to
+Claude automatically.
+
+### Commands
+
+| Command | What it does |
+|---|---|
+| `:ClaudeCode` | Toggle the Claude window open/closed |
+| `:ClaudeCodeFocus` | Focus or toggle Claude with visibility awareness |
+| `:ClaudeCodeAdd <file>` | Add a file (or line range) to Claude's context |
+| `:ClaudeCodeSend` | Send current visual selection to Claude |
+| `:ClaudeCodeDiffAccept` | Accept Claude's proposed changes |
+| `:ClaudeCodeDiffDeny` | Reject Claude's proposed changes |
+| `:ClaudeCodeCloseAllDiffs` | Dismiss all pending diff proposals |
+| `:ClaudeCodeSelectModel` | Switch Claude model |
+| `:ClaudeCodeStatus` | Show connection status |
+
+### Keybindings
+
+| Key | Mode | Action |
+|---|---|---|
+| `<Space>cc` | Normal | Toggle Claude window |
+| `<Space>cf` | Normal | Focus Claude window |
+| `<Space>cr` | Normal | Resume last Claude session |
+| `<Space>cb` | Normal | Add current buffer to Claude's context |
+| `<Space>cs` | Visual | Send selected code to Claude |
+| `<Space>ca` | Normal | Accept Claude's diff |
+| `<Space>cd` | Normal | Reject Claude's diff |
+| `<Space>cm` | Normal | Select Claude model |
+
+### Typical workflows
+
+**Ask about code you're reading:**
+Open a file → `<Space>cc` → Claude already knows which file you're in.
+Ask your question. No need to paste anything.
+
+**Send a specific function for review:**
+Select the function with `V` (line visual) → `<Space>cs` → Claude receives
+the exact selection with file path and line numbers as context.
+
+**Ask Claude to edit code:**
+`<Space>cc` to open → describe what you want changed → Claude proposes edits
+as a diff in a vertical split. Review it, then:
+- `<Space>ca` or `:w` to accept
+- `<Space>cd` or `:q` to reject
+
+**Add multiple files as context:**
+`:ClaudeCodeAdd src/auth.py` then `:ClaudeCodeAdd src/models.py` — Claude
+sees both files and can reason across them.
+
+**Resume a previous session:**
+`<Space>cr` opens Claude with `--resume`, picking up your last conversation.
+
+**Switch models mid-session:**
+`<Space>cm` opens a picker — select opus, sonnet, or haiku without leaving Neovim.
+
+### Diff workflow
+
+When Claude proposes a code change:
+
+```
+┌─────────────────────────┬─────────────────────────┐
+│  current code           │  Claude's proposed edit  │
+│                         │                          │
+│  def greet(name):       │  def greet(name: str)    │
+│    print("hi")          │    -> str:               │
+│                         │    return f"Hello {name}"│
+└─────────────────────────┴─────────────────────────┘
+         Space+cd (reject)         Space+ca (accept)
+```
+
+- The left panel shows your current code
+- The right panel shows Claude's proposed version
+- You can edit the proposal before accepting
+- `:w` / `<Space>ca` → apply the change to your file
+- `:q` / `<Space>cd` → discard it
+
+### Why this over a tmux pane
+
+| | claudecode.nvim | tmux pane |
+|---|---|---|
+| File awareness | automatic | manual paste |
+| Selection context | automatic | manual paste |
+| Proposed edits | inline diff with accept/reject | manual copy-paste back |
+| Toggle | one key | navigate panes |
+| Session persistence | yes | yes |
 
 ---
 
@@ -470,10 +557,9 @@ to `Ctrl+Shift+P` in VSCode.
 Useful `<Space>` groups:
 - `<Space>f` — find (files, text, buffers, symbols...)
 - `<Space>g` — git
-- `<Space>c` — code (actions, diagnostics...)
-- `<Space>u` — UI toggles (line numbers, wrap, etc.)
-- `<Space>x` — diagnostics list
-- `<Space>cc` — Claude Code
+- `<Space>c` — code (actions, diagnostics...) + Claude Code
+- `<Space>cc` — Claude Code toggle
+- `<Space>cs` — send selection to Claude (Visual mode)
 
 ---
 
@@ -554,7 +640,11 @@ Ctrl+P       → find file
 Space+/      → search in files
 Space+e      → toggle explorer
 Ctrl+T       → toggle terminal
-Space+cc     → Claude Code
+Space+cc     → Claude Code (toggle)
+Space+cs     → send selection to Claude (Visual mode)
+Space+cb     → add buffer to Claude context
+Space+ca     → accept Claude diff
+Space+cd     → reject Claude diff
 
 F12 / gd     → go to definition
 Shift+F12    → find references
