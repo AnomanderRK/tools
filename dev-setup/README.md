@@ -145,7 +145,7 @@ Already-installed tools are detected and skipped.
 |---|---|
 | `Ctrl+P` | Find files |
 | `Ctrl+Shift+P` | Commands palette |
-| `Ctrl+Shift+F` | Search in files |
+| `Space+/` | Search in files |
 | `Space+e` | Toggle file tree |
 | `Ctrl+T` | Toggle terminal |
 | `Ctrl+S` | Save file |

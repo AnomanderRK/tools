@@ -66,7 +66,7 @@ ccnvim my-project       # cd to project + activate venv + open nvim
 | Key | Action |
 |---|---|
 | `Ctrl+P` | Find file by name (fuzzy — just type part of the name) |
-| `Ctrl+Shift+F` | Search text across all files |
+| `Space+/` | Search text across all files |
 | `Space+e` | Toggle file explorer sidebar |
 | `Shift+H` | Go to previous tab/buffer |
 | `Shift+L` | Go to next tab/buffer |
@@ -206,12 +206,12 @@ then `<Space>cc` again to hide and go back to editing. The session persists.
 | `?pattern` | Search backward |
 | `n` / `N` | Next / previous match |
 | `Esc` | Clear search highlights |
-| `Ctrl+Shift+F` | Telescope live grep (search across files) |
+| `Space+/` | Telescope live grep (search across files) |
 | `:%s/old/new/g` | Replace all in file |
 | `:%s/old/new/gc` | Replace all with confirmation |
 
 **Example — find all usages of a string across the repo:**
-`Ctrl+Shift+F`, type the string. Results update live. `Enter` to jump to a match.
+`Space+/`, type the string. Results update live. `Enter` to jump to a match.
 
 **Example — rename a variable in the current file:**
 `:%s/old_name/new_name/gc` — replaces each one and asks to confirm (`y/n/a/q`).
@@ -551,7 +551,7 @@ v / V        → Visual mode (select)
 :            → Command mode
 
 Ctrl+P       → find file
-Ctrl+Shift+F → search in files
+Space+/      → search in files
 Space+e      → toggle explorer
 Ctrl+T       → toggle terminal
 Space+cc     → Claude Code

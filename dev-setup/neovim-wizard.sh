@@ -405,7 +405,7 @@ map(\"n\", \"<leader>q\", \"<cmd>bd<cr>\",    { desc = \"Close buffer\" })
 -- ── File picker / search (Ctrl+P / Ctrl+Shift+F like VSCode) ─────────────────
 map(\"n\", \"<C-p>\", \"<cmd>Telescope find_files<cr>\", { desc = \"Find files (Ctrl+P)\" })
 map(\"n\", \"<C-S-p>\", \"<cmd>Telescope commands<cr>\",  { desc = \"Commands palette\" })
-map(\"n\", \"<C-S-f>\", \"<cmd>Telescope live_grep<cr>\",  { desc = \"Search in files\" })
+map(\"n\", \"<leader>/\", \"<cmd>Telescope live_grep<cr>\",  { desc = \"Search in files\" })
 
 -- ── File tree (<Space>e — Ctrl+B conflicts with tmux prefix) ─────────────────
 map(\"n\", \"<leader>e\", \"<cmd>Neotree toggle<cr>\", { desc = \"Toggle file tree\" })
@@ -1106,7 +1106,7 @@ echo -e "        set to ${CYAN}JetBrainsMono Nerd Font Mono${RESET} and restart 
 echo
 echo -e "  ${BOLD}Key bindings quick reference:${RESET}"
 echo -e "    ${CYAN}Ctrl+P${RESET}         Find file                   ${DIM}(like VSCode)${RESET}"
-echo -e "    ${CYAN}Ctrl+Shift+F${RESET}   Search in files             ${DIM}(like VSCode)${RESET}"
+echo -e "    ${CYAN}Space+/${RESET}        Search in files             ${DIM}(live grep)${RESET}"
 echo -e "    ${CYAN}Space+e${RESET}        Toggle file explorer         ${DIM}(Space then e)${RESET}"
 echo -e "    ${CYAN}Ctrl+T${RESET}         Toggle terminal (split)      ${DIM}(like VSCode)${RESET}"
 echo -e "    ${CYAN}Space cc${RESET}       Claude Code float            ${DIM}(wait for plugins to load)${RESET}"
