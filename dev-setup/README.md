@@ -1,9 +1,17 @@
 # dev-setup
 
-Interactive wizard to configure a developer environment for Bash on WSL or bare Linux.
+Interactive wizards to configure a terminal-based developer environment on WSL or bare Linux.
 
-Covers: shell prompt, Python toolchain, Kubernetes CLI, ArgoCD, Claude Code launcher,
-tmux, and Windows Terminal theming — all from a single script.
+---
+
+## Wizards
+
+| Script | Purpose |
+|---|---|
+| `shell-wizard.sh` | Shell prompt (Starship), Python toolchain, Kubernetes CLI, ArgoCD, Claude Code launcher, tmux, Windows Terminal theming |
+| `neovim-wizard.sh` | Neovim + LazyVim: editor, LSPs, formatter, linter, Claude Code integration |
+
+Both wizards share a `lib/helpers.sh` library and follow the same pattern: gather all questions upfront, show a summary, confirm once, then write everything.
 
 ---
 
@@ -13,31 +21,37 @@ tmux, and Windows Terminal theming — all from a single script.
 - `curl`
 - `python3` (for Windows Terminal patching, available in all Ubuntu WSL distros)
 - `git`
+- `sudo` / `apt` (for ripgrep, fd-find, tmux)
 
-Everything else is installed by the wizard.
+Everything else is installed by the wizards.
 
 ---
 
 ## Usage
 
-### Run the wizard
+### Shell wizard
 
 ```bash
-bash ~/dev-setup/setup-wizard.sh
+bash ~/dev-setup/shell-wizard.sh
 ```
 
-The wizard asks a few questions, shows a summary, then writes all config files and
-installs missing tools. Existing files are backed up with a `.bak.TIMESTAMP` suffix
-before being overwritten.
-
-### Preview without making any changes
+Sets up Starship prompt, pyenv, uv, kubectl, tmux, Claude Code launcher, and Windows Terminal theme.
 
 ```bash
-bash ~/dev-setup/setup-wizard.sh --dry-run
+bash ~/dev-setup/shell-wizard.sh --dry-run    # preview only
 ```
 
-Walks through every step and prints what would be written or installed — nothing is
-touched.
+### Neovim wizard
+
+```bash
+bash ~/dev-setup/neovim-wizard.sh
+```
+
+Installs Neovim, Node.js, ripgrep, fd, and writes a full LazyVim config tuned for Python and React Native development with Claude Code integration.
+
+```bash
+bash ~/dev-setup/neovim-wizard.sh --dry-run   # preview only
+```
 
 ### Activate changes in the current terminal
 
@@ -49,29 +63,24 @@ New terminals pick up the config automatically.
 
 ---
 
-## What the wizard sets up
+## Shell wizard — what it sets up
 
 ### Starship prompt
 
-Two-line prompt showing: directory, git branch + status, Python virtualenv, kube
-context, and command duration.
+Two-line prompt showing: directory, git branch + status, Python virtualenv, kube context, and command duration.
 
 ```
 ~/github/alerting-service on  feat/my-branch (! 2) via  3.12.3 ⎈ 🟢 dev took 3s
 ❯
 ```
 
-Theme choices: **Nord**, **Catppuccin Mocha**, **Tokyo Night** (recommended),
-**Solarized Light**, or Classic ANSI. The same palette drives both Starship and the
-tmux status bar.
+Theme choices: **Nord**, **Catppuccin Mocha**, **Tokyo Night**, **Solarized Light**, or Classic ANSI. The same palette drives both Starship and the tmux status bar.
 
 Config written to: `~/.config/starship.toml`
 
 ### Shell config
 
-Sourced from `~/.bashrc` via a single line. Edit
-`~/.config/dev-setup/bashrc_devsetup.sh` directly — changes take effect on next
-shell open.
+Sourced from `~/.bashrc` via a single line. Edit `~/.config/dev-setup/bashrc_devsetup.sh` directly — changes take effect on next shell open.
 
 ### Tools installed automatically
 
@@ -95,100 +104,140 @@ Already-installed tools are detected and skipped.
 
 ---
 
-## Aliases and functions
+## Neovim wizard — what it sets up
 
-### Claude Code
+### Tools installed automatically
+
+| Tool | Purpose |
+|---|---|
+| `neovim` | Editor (latest stable, from GitHub releases) |
+| `node` + `npm` | Required by most LSP servers (via nvm) |
+| `ripgrep` | Fast search, used by Telescope |
+| `fd` | Fast file finder, used by Telescope |
+| `lazygit` | TUI git client (optional) |
+
+### LSPs — installed on first `nvim` launch via Mason
+
+| LSP | Language |
+|---|---|
+| `pyright` + `ruff_lsp` | Python (type checking + linting) |
+| `ts_ls` | TypeScript / React Native |
+| `lua_ls` | Lua (for editing your Neovim config) |
+| `bashls` | Bash |
+
+### Files written
+
+| Path | Purpose |
+|---|---|
+| `~/.config/nvim/init.lua` | Entry point |
+| `~/.config/nvim/lua/config/lazy.lua` | lazy.nvim bootstrap + LazyVim spec |
+| `~/.config/nvim/lua/config/options.lua` | Editor options |
+| `~/.config/nvim/lua/config/keymaps.lua` | VSCode-familiar keybindings |
+| `~/.config/nvim/lua/plugins/colorscheme.lua` | Theme (matches your shell theme) |
+| `~/.config/nvim/lua/plugins/lsp.lua` | Mason, LSPs, conform, nvim-lint |
+| `~/.config/nvim/lua/plugins/tools.lua` | toggleterm, Telescope, LazyGit, Copilot |
+| `~/.config/dev-setup/bashrc_neovim.sh` | Shell aliases and functions |
+| `~/.bashrc` | Gets one `source` line appended |
+
+### Keybindings (VSCode-style)
+
+| Key | Action |
+|---|---|
+| `Ctrl+P` | Find files |
+| `Ctrl+Shift+P` | Commands palette |
+| `Ctrl+Shift+F` | Search in files |
+| `Space+e` | Toggle file tree |
+| `Ctrl+T` | Toggle terminal |
+| `Ctrl+S` | Save file |
+| `Space+q` | Close buffer |
+| `Shift+H` / `Shift+L` | Prev / next buffer |
+| `Ctrl+W l` / `Ctrl+W h` | Move focus editor ↔ explorer |
+| `F12` | Go to definition |
+| `Shift+F12` | Find references |
+| `F2` | Rename symbol |
+| `Ctrl+.` | Code actions |
+| `Space` (alone) | Show all keybindings (which-key) |
+| `<Space>cc` | Claude Code float terminal |
+| `<Space>gg` | LazyGit (if installed) |
+
+### Claude Code integration
+
+Three ways to use Claude Code with Neovim:
 
 ```bash
-# Launch Claude Code in the current directory (activates venv if present)
-cc
+# 1. From any terminal — unchanged from shell-wizard
+cc my-project           # cd + venv + claude
 
-# cd into ~/github/my-project, activate venv, launch Claude Code
-cc my-project
+# 2. cd + venv + nvim, then <Space>cc inside editor
+ccnvim my-project       # cd + venv + nvim .
+                        # then press <Space>cc for Claude Code float
 
-# Tab-complete project names from workspace root
-cc my-<TAB>
+# 3. Already inside nvim — press <Space>cc
+#    Opens a persistent floating terminal running claude
+#    Press <Space>cc again to hide/show it
+#    Press <Esc><Esc> to exit insert mode without closing
+```
 
-# Jump to workspace root
-cw
+The Claude Code terminal is a persistent PTY — it keeps its session state when hidden and re-shown.
+
+---
+
+## Shell aliases and functions
+
+### Claude Code (from shell-wizard)
+
+```bash
+cc [project]       # cd into workspace/project, activate venv, launch claude
+cw                 # cd to workspace root
+```
+
+### Neovim (from neovim-wizard)
+
+```bash
+ccnvim [project]   # cd into workspace/project, activate venv, open in nvim
+                   # tab-completes project names
+vi / vim           # → nvim (if aliases enabled)
 ```
 
 ### kubectl
 
 ```bash
 k get pods                        # k = kubectl (via kubecolor for color)
-kgp                               # kubectl get pods
-kgpa                              # kubectl get pods -A
-kgn                               # kubectl get nodes
-kgs                               # kubectl get services
-kgd                               # kubectl get deployments
-kge                               # kubectl get events --sort-by=.lastTimestamp
-kl <pod>                          # kubectl logs
-klf <pod>                         # kubectl logs -f
-ke <pod> -- bash                  # kubectl exec -it
-kaf manifests/deploy.yaml         # kubectl apply -f
-kdf manifests/deploy.yaml         # kubectl delete -f
-kctx my-cluster                   # switch kube context
-kns my-namespace                  # set namespace on current context
+kgp / kgpa                        # get pods / get pods -A
+kgn / kgs / kgd                   # get nodes / services / deployments
+kge                               # get events --sort-by=.lastTimestamp
+kl / klf <pod>                    # logs / logs -f
+ke <pod> -- bash                  # exec -it
+kaf / kdf manifests/deploy.yaml   # apply -f / delete -f
+kctx / kns                        # switch context / namespace
 kgctx                             # list all contexts
-
-# Tail logs for first pod matching a prefix
-klns my-namespace my-service
-
-# Watch all pods in a namespace (refreshes every 2s)
-wkns my-namespace
-```
-
-Example — find a crashing pod and tail its logs:
-
-```bash
-kgp                              # spot the CrashLoopBackOff
-klns default my-service          # tail logs without copy-pasting the full pod name
+klns <namespace> <prefix>         # tail logs by namespace + pod prefix
+wkns <namespace>                  # watch pods (refreshes every 2s)
 ```
 
 ### ArgoCD
 
 ```bash
-acd                              # argocd
-acdal                            # argocd app list
-acdas my-app                     # argocd app sync my-app
-acdaw my-app                     # argocd app wait my-app
-
-# Sync and wait until healthy in one command
-argo_sync my-app
-
-# Stream live logs for an app
-argo_logs my-app
+acd / acdal / acdas / acdaw   # argocd / app list / app sync / app wait
+argo_sync my-app               # sync + wait --health in one command
+argo_logs my-app               # stream live app logs
 ```
 
 ### Git
 
 ```bash
-gs       # git status -sb
-gd       # git diff
-gds      # git diff --staged
-ga .     # git add
-gc -m    # git commit -m
-gp       # git push
-gpl      # git pull --rebase
-gl       # git log --oneline --graph (last 20)
-gco -b   # git checkout -b
-gb       # git branch -vv
-gst      # git stash
-gstp     # git stash pop
+gs / gd / gds        # status / diff / diff --staged
+ga / gc / gp / gpl   # add / commit / push / pull --rebase
+gl                   # log --oneline --graph (last 20)
+gco / gb / gst       # checkout / branch -vv / stash
 ```
 
 ### WSL helpers
 
 ```bash
-# Open Windows Explorer in the current directory
-explore
-
-# Copy command output to Windows clipboard
-kubectl get pods | pbcopy
-
-# Translate paths
-winpath .                        # prints Windows path for current dir, e.g. \\wsl$\Ubuntu\home\...
+explore                          # open Windows Explorer here
+pbcopy                           # copy to Windows clipboard
+winpath .                        # print Windows path for current dir
 wslpath_from_win 'C:\Users\...'  # convert Windows path to WSL path
 ```
 
@@ -223,20 +272,22 @@ Status bar shows: session name, kube context, git branch, hostname, clock.
 
 ---
 
-## Re-running the wizard
+## Re-running the wizards
 
-The wizard is safe to re-run at any time:
+Both wizards are safe to re-run at any time:
 
-- Config files are backed up before being overwritten
+- Config files are backed up before being overwritten (`<path>.bak.TIMESTAMP`)
+- The entire `~/.config/nvim` directory is backed up before rewriting
 - Already-installed tools are skipped with a version report
-- The `~/.bashrc` source line is only added once (idempotent)
+- The `~/.bashrc` source lines are only added once (idempotent markers)
 
-To switch themes, just re-run and pick a different one — Starship, tmux, and
-Windows Terminal are all updated together.
+To switch themes, re-run the relevant wizard and pick a different one.
 
 ---
 
 ## Files written
+
+### shell-wizard.sh
 
 | Path | Purpose |
 |---|---|
@@ -244,7 +295,26 @@ Windows Terminal are all updated together.
 | `~/.config/dev-setup/bashrc_devsetup.sh` | All aliases and functions |
 | `~/.tmux.conf` | tmux config |
 | `~/.bashrc` | Gets one `source` line appended |
-| `C:\Users\<you>\AppData\Local\Microsoft\Windows\Fonts\` | Nerd Font TTFs (WSL only) |
+| `C:\Users\<you>\...\Fonts\` | Nerd Font TTFs (WSL only) |
 | Windows Terminal `settings.json` | Color scheme + profile settings (WSL only) |
 
-Backups: any overwritten file gets a copy at `<original>.bak.YYYYMMDDHHMMSS`.
+### neovim-wizard.sh
+
+| Path | Purpose |
+|---|---|
+| `~/.config/nvim/` | Full LazyVim config (7 Lua files) |
+| `~/.config/dev-setup/bashrc_neovim.sh` | nvim aliases and functions |
+| `~/.bashrc` | Gets one `source` line appended |
+
+### Nerd Font (WSL — icons in Neovim)
+
+Icons in neo-tree, bufferline, and lualine require a Nerd Font installed on the Windows side.
+Run the included script once from **PowerShell (Windows)**:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+# path printed by the wizard at the end of its run:
+\\wsl$\Ubuntu\home\<you>\github\personal\tools\dev-setup\install-nerd-font.ps1
+```
+
+Then set font to **JetBrainsMono Nerd Font Mono** in Windows Terminal → your WSL profile → Appearance.
