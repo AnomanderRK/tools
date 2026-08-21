@@ -158,7 +158,7 @@ Already-installed tools are detected and skipped.
 | `F2` | Rename symbol |
 | `Ctrl+.` | Code actions |
 | `Space` (alone) | Show all keybindings (which-key) |
-| `<Space>cc` | Claude Code float terminal |
+| `<Space>cc` | Toggle Claude Code (context-aware) |
 | `<Space>gg` | LazyGit (if installed) |
 
 ### Claude Code integration
@@ -176,7 +176,7 @@ ccnvim my-project       # cd + venv + nvim .
 | Key | Action |
 |---|---|
 | `<Space>cc` | Toggle Claude window |
-| `<Space>cs` | Send visual selection to Claude |
+| `<Space>cS` | Send visual selection to Claude |
 | `<Space>cb` | Add current buffer to Claude's context |
 | `<Space>ca` | Accept Claude's proposed diff |
 | `<Space>cd` | Reject Claude's proposed diff |

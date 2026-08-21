@@ -403,6 +403,7 @@ map(\"n\", \"<leader>q\", \"<cmd>bd<cr>\",    { desc = \"Close buffer\" })
 map(\"n\", \"<C-p>\", \"<cmd>Telescope find_files<cr>\", { desc = \"Find files (Ctrl+P)\" })
 map(\"n\", \"<C-S-p>\", \"<cmd>Telescope commands<cr>\",  { desc = \"Commands palette\" })
 map(\"n\", \"<leader>/\", \"<cmd>Telescope live_grep<cr>\",  { desc = \"Search in files\" })
+map(\"n\", \"<leader>f/\", \"<cmd>Telescope current_buffer_fuzzy_find<cr>\", { desc = \"Fuzzy find in buffer\" })
 
 -- ── File tree (<Space>e — Ctrl+B conflicts with tmux prefix) ─────────────────
 map(\"n\", \"<leader>e\", \"<cmd>Neotree toggle<cr>\", { desc = \"Toggle file tree\" })
@@ -572,6 +573,22 @@ UI_LUA='return {
             separator  = true,
           },
         },
+      },
+    },
+  },
+
+  -- Scrollbar with git changes, diagnostics, and search marks (like VSCode)
+  {
+    "lewis6991/satellite.nvim",
+    event = "BufReadPost",
+    opts = {
+      current_only = false,
+      winblend     = 50,
+      handlers = {
+        cursor      = { enable = true },
+        gitsigns    = { enable = true },
+        diagnostic  = { enable = true },
+        search      = { enable = true },
       },
     },
   },
@@ -943,42 +960,18 @@ EXTRAS_LUA='return {
     },
   },
 
-  -- Claude Code IDE integration: context-aware, diff accept/reject, selection send
+  -- Claude Code IDE integration (context tracking, diffs, selection send)
   {
     "coder/claudecode.nvim",
     dependencies = { "folke/snacks.nvim" },
     event = "VeryLazy",
-    opts = {
-      auto_start      = true,
-      track_selection = true,
-      terminal = {
-        split_side             = "right",
-        split_width_percentage = 0.35,
-        provider               = "snacks",
-        auto_close             = true,
-        auto_insert            = true,
-        snacks_win_opts = {
-          position = "float",
-          width    = 0.92,
-          height   = 0.88,
-          border   = "rounded",
-          backdrop = 80,
-        },
-      },
-      diff_opts = {
-        layout               = "vertical",
-        auto_resize_terminal = true,
-      },
-    },
+    config = true,
     keys = {
       { "<leader>cc", "<cmd>ClaudeCode<cr>",            desc = "Claude Code (toggle)" },
-      { "<leader>cf", "<cmd>ClaudeCodeFocus<cr>",       desc = "Claude Code (focus)" },
-      { "<leader>cr", "<cmd>ClaudeCode --resume<cr>",   desc = "Claude Code (resume)" },
+      { "<leader>cS", "<cmd>ClaudeCodeSend<cr>",        mode = "v", desc = "Claude send selection" },
       { "<leader>cb", "<cmd>ClaudeCodeAdd %<cr>",       desc = "Claude add buffer" },
-      { "<leader>cs", "<cmd>ClaudeCodeSend<cr>",        mode = "v", desc = "Claude send selection" },
       { "<leader>ca", "<cmd>ClaudeCodeDiffAccept<cr>",  desc = "Claude accept diff" },
       { "<leader>cd", "<cmd>ClaudeCodeDiffDeny<cr>",    desc = "Claude reject diff" },
-      { "<leader>cm", "<cmd>ClaudeCodeSelectModel<cr>", desc = "Claude select model" },
     },
   },
 }
@@ -1110,8 +1103,8 @@ echo -e "    ${CYAN}Ctrl+P${RESET}         Find file                   ${DIM}(li
 echo -e "    ${CYAN}Space+/${RESET}        Search in files             ${DIM}(live grep)${RESET}"
 echo -e "    ${CYAN}Space+e${RESET}        Toggle file explorer         ${DIM}(Space then e)${RESET}"
 echo -e "    ${CYAN}Ctrl+T${RESET}         Toggle terminal (split)      ${DIM}(like VSCode)${RESET}"
-echo -e "    ${CYAN}Space cc${RESET}       Toggle Claude Code"
-echo -e "    ${CYAN}Space cs${RESET}       Send selection to Claude     ${DIM}(Visual mode)${RESET}"
+echo -e "    ${CYAN}Space cc${RESET}       Toggle Claude Code (context-aware)"
+echo -e "    ${CYAN}Space cS${RESET}       Send selection to Claude     ${DIM}(Visual mode)${RESET}"
 echo -e "    ${CYAN}Space cb${RESET}       Add current buffer to Claude"
 echo -e "    ${CYAN}Space ca${RESET}       Accept Claude diff"
 echo -e "    ${CYAN}Space cd${RESET}       Reject Claude diff"
