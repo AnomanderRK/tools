@@ -863,6 +863,22 @@ EXTRAS_LUA='return {
     },
   },
 
+  -- Live markdown preview in the browser (WSL: opens in Windows default browser)
+  {
+    "iamcco/markdown-preview.nvim",
+    cmd   = { "MarkdownPreview", "MarkdownPreviewStop", "MarkdownPreviewToggle" },
+    ft    = { "markdown" },
+    build = "cd app && npx --yes yarn install",
+    keys  = {
+      { "<leader>mp", "<cmd>MarkdownPreviewToggle<cr>", ft = "markdown", desc = "Markdown preview (browser)" },
+    },
+    init = function()
+      vim.g.mkdp_browser    = "explorer.exe"  -- WSL: open in Windows default browser
+      vim.g.mkdp_auto_close = 1               -- close browser tab when leaving buffer
+      vim.g.mkdp_refresh_slow = 0             -- live sync
+    end,
+  },
+
   -- Auto-close brackets, parens, quotes
   {
     "windwp/nvim-autopairs",
