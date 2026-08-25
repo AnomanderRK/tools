@@ -34,7 +34,7 @@ divider
 say "Preferences"
 echo
 
-THEME_LABEL=$(ask_choice "Color theme (Starship prompt + tmux status bar):" 1 \
+THEME_LABEL=$(ask_choice "Color theme (Starship prompt + multiplexer status bar):" 1 \
   "Nord (dark, blue-purple)" \
   "Catppuccin Mocha (dark, pastel)" \
   "Tokyo Night (dark, neon)" \
@@ -65,12 +65,20 @@ GIT_NAME=$(ask_input  "git user.name  (leave blank to skip)" "")
 GIT_EMAIL=$(ask_input "git user.email (leave blank to skip)" "")
 echo
 
-DO_TMUX=false
-if ask_yn "Generate tmux config (~/.tmux.conf)?" y; then DO_TMUX=true; fi
+MUX_LABEL=$(ask_choice "Terminal multiplexer:" 1 \
+  "herdr  (agent-aware, recommended)" \
+  "tmux   (classic, battle-tested)" \
+  "skip   (none)")
 echo
 
+case "$MUX_LABEL" in
+  herdr*) MUX=herdr ;;
+  tmux*)  MUX=tmux  ;;
+  *)      MUX=none  ;;
+esac
+
 TMUX_PREFIX="C-b"
-if $DO_TMUX; then
+if [[ "$MUX" == "tmux" ]]; then
   TMUX_PREFIX_LABEL=$(ask_choice "tmux prefix key:" 1 \
     "Ctrl+b (default)" \
     "Ctrl+a" \
@@ -90,8 +98,8 @@ echo -e "  Kube in prompt : ${BOLD}$KUBE_IN_PROMPT${RESET}"
 echo -e "  ArgoCD aliases : ${BOLD}$ARGO_ALIASES${RESET}"
 echo -e "  Workspace root : ${BOLD}$WORKSPACE_ROOT${RESET}"
 echo -e "  Git identity   : ${BOLD}${GIT_NAME:-<skip>}${GIT_EMAIL:+ <$GIT_EMAIL>}${RESET}"
-echo -e "  Tmux config    : ${BOLD}$DO_TMUX${RESET}"
-$DO_TMUX && echo -e "  Tmux prefix    : ${BOLD}$TMUX_PREFIX${RESET}"
+echo -e "  Multiplexer    : ${BOLD}$MUX${RESET}"
+[[ "$MUX" == "tmux" ]] && echo -e "  Tmux prefix    : ${BOLD}$TMUX_PREFIX${RESET}"
 divider
 echo
 
@@ -113,6 +121,7 @@ case "$THEME" in
     S_DIM="#4c566a"
     TM_BG="#2e3440"; TM_FG="#d8dee9"; TM_ACCENT="#88c0d0"
     TM_DIM="#4c566a"; TM_YELLOW="#ebcb8b"
+    HERDR_THEME="nord"
     PALETTE='
 [palettes.active]
 accent = "#88c0d0"
@@ -129,6 +138,7 @@ dim    = "#4c566a"'
     S_DIM="#585b70"
     TM_BG="#1e1e2e"; TM_FG="#cdd6f4"; TM_ACCENT="#89b4fa"
     TM_DIM="#585b70"; TM_YELLOW="#f9e2af"
+    HERDR_THEME="catppuccin"
     PALETTE='
 [palettes.active]
 accent = "#89b4fa"
@@ -145,6 +155,7 @@ dim    = "#585b70"'
     S_DIM="#414868"
     TM_BG="#1a1b26"; TM_FG="#c0caf5"; TM_ACCENT="#7aa2f7"
     TM_DIM="#414868"; TM_YELLOW="#e0af68"
+    HERDR_THEME="tokyo-night"
     PALETTE='
 [palettes.active]
 accent = "#7aa2f7"
@@ -161,6 +172,7 @@ dim    = "#414868"'
     S_DIM="#93a1a1"
     TM_BG="#fdf6e3"; TM_FG="#657b83"; TM_ACCENT="#268bd2"
     TM_DIM="#93a1a1"; TM_YELLOW="#b58900"
+    HERDR_THEME="solarized-light"
     PALETTE='
 [palettes.active]
 accent = "#268bd2"
@@ -174,6 +186,7 @@ dim    = "#93a1a1"'
   *)
     TM_BG="default"; TM_FG="white"; TM_ACCENT="cyan"
     TM_DIM="brightblack"; TM_YELLOW="yellow"
+    HERDR_THEME="dark"
     PALETTE='
 [palettes.active]
 accent = "cyan"
@@ -505,7 +518,7 @@ fi
 # ═══════════════════════════════════════════════════════════════════════════════
 # tmux config
 # ═══════════════════════════════════════════════════════════════════════════════
-if $DO_TMUX; then
+if [[ "$MUX" == "tmux" ]]; then
   say "tmux (~/.tmux.conf)"
 
   TMUX_CONTENT="# ~/.tmux.conf — shell-wizard.sh | theme: $THEME
@@ -706,7 +719,7 @@ if $ARGO_ALIASES; then
 fi
 
 # ── tmux ──────────────────────────────────────────────────────────────────────
-if $DO_TMUX; then
+if [[ "$MUX" == "tmux" ]]; then
   echo -en "  ${BOLD}tmux${RESET}... "
   if command -v tmux &>/dev/null; then
     install_skip "$(tmux -V)"
@@ -715,6 +728,133 @@ if $DO_TMUX; then
     if sudo apt-get install -y tmux >/dev/null 2>&1; then
       install_ok "installed via apt"
     else install_fail "tmux" "sudo apt install tmux"
+    fi
+  fi
+fi
+
+# ── herdr ─────────────────────────────────────────────────────────────────────
+if [[ "$MUX" == "herdr" ]]; then
+  echo -en "  ${BOLD}herdr${RESET}... "
+  if command -v herdr &>/dev/null; then
+    install_skip "$(herdr --version 2>/dev/null || echo 'already installed')"
+  elif $DRY_RUN; then install_dry "herdr"
+  else
+    if curl -fsSL https://herdr.dev/install.sh | sh >/dev/null 2>&1; then
+      install_ok "installed via curl installer"
+    else install_fail "herdr" "curl -fsSL https://herdr.dev/install.sh | sh"
+    fi
+  fi
+
+  HERDR_CONFIG="# ~/.config/herdr/config.toml — shell-wizard.sh | theme: $THEME
+
+onboarding = false
+
+[terminal]
+default_shell = \"/bin/bash\"
+
+[theme]
+name = \"$HERDR_THEME\"
+
+[ui]
+tab_bar_position = \"bottom\"
+status_indicators = \"symbols\"   # distinct shapes for working/blocked/idle
+mouse_capture     = true
+redraw_on_focus_gained = true
+
+[session]
+resume_agents_on_restore = true  # AI agents resume their sessions after restart
+
+[worktrees]
+directory = \"$WORKSPACE_ROOT\"   # herdr looks here when creating git worktrees
+
+[keys]
+prefix = \"ctrl+b\"
+
+# ── Pane splitting (prefix + | / -) ──────────────────────────────────────────
+split_horizontal = \"prefix+-\"
+split_vertical   = \"prefix+|\"
+
+# ── Tabs (prefix + c / Shift+arrows) ─────────────────────────────────────────
+new_tab      = \"prefix+c\"
+next_tab     = \"shift+right\"
+previous_tab = \"shift+left\"
+rename_tab   = \"prefix+shift+t\"
+
+# ── Workspaces (prefix + N / w) ──────────────────────────────────────────────
+new_workspace    = \"prefix+N\"
+workspace_picker = \"prefix+w\"
+
+# ── Worktrees (prefix + Shift+G) ─────────────────────────────────────────────
+new_worktree = \"prefix+shift+g\"
+
+# ── Pane navigation (prefix + h/j/k/l) ───────────────────────────────────────
+focus_pane_left  = \"prefix+h\"
+focus_pane_down  = \"prefix+j\"
+focus_pane_up    = \"prefix+k\"
+focus_pane_right = \"prefix+l\"
+
+# ── Pane resize (prefix + H/J/K/L) ───────────────────────────────────────────
+resize_pane_left  = \"prefix+H\"
+resize_pane_down  = \"prefix+J\"
+resize_pane_up    = \"prefix+K\"
+resize_pane_right = \"prefix+L\"
+
+# ── Session navigator + misc ──────────────────────────────────────────────────
+goto          = \"prefix+S\"
+reload_config = \"prefix+r\"
+detach        = \"prefix+d\"
+
+# ── Custom commands (must be last — TOML array tables absorb subsequent keys) ─
+
+[[keys.command]]
+key         = \"alt+left\"
+type        = \"shell\"
+command     = \"herdr pane focus --direction left\"
+description = \"Focus pane left\"
+
+[[keys.command]]
+key         = \"alt+down\"
+type        = \"shell\"
+command     = \"herdr pane focus --direction down\"
+description = \"Focus pane down\"
+
+[[keys.command]]
+key         = \"alt+up\"
+type        = \"shell\"
+command     = \"herdr pane focus --direction up\"
+description = \"Focus pane up\"
+
+[[keys.command]]
+key         = \"alt+right\"
+type        = \"shell\"
+command     = \"herdr pane focus --direction right\"
+description = \"Focus pane right\"
+
+[[keys.command]]
+key         = \"prefix+A\"
+type        = \"pane\"
+command     = \"claude\"
+description = \"Launch Claude Code\"
+"
+
+  if ! $DRY_RUN; then
+    mkdir -p "$HOME/.config/herdr"
+    write_file "$HOME/.config/herdr/config.toml" "$HERDR_CONFIG"
+  else
+    info "[dry-run] would write ~/.config/herdr/config.toml (theme: $HERDR_THEME)"
+  fi
+
+  # Install Claude Code integration so herdr can resume agent sessions after restart
+  echo -en "  ${BOLD}herdr claude integration${RESET}... "
+  if herdr integration status 2>/dev/null | grep -q "^claude: current"; then
+    install_skip "already installed"
+  elif $DRY_RUN; then
+    install_dry "herdr integration install claude"
+  else
+    if herdr integration install claude >/dev/null 2>&1; then
+      install_ok "installed"
+    else
+      install_fail "herdr claude integration" "herdr integration install claude"
     fi
   fi
 fi
@@ -1032,7 +1172,8 @@ echo
 echo -e "  ${BOLD}Files written:${RESET}"
 echo -e "    ${GREEN}~/.config/starship.toml${RESET}"
 echo -e "    ${GREEN}~/.config/dev-setup/bashrc_devsetup.sh${RESET}"
-$DO_TMUX && echo -e "    ${GREEN}~/.tmux.conf${RESET}"
+[[ "$MUX" == "tmux"  ]] && echo -e "    ${GREEN}~/.tmux.conf${RESET}"
+[[ "$MUX" == "herdr" ]] && echo -e "    ${GREEN}~/.config/herdr/config.toml${RESET}"
 echo
 echo -e "  ${BOLD}Activate now:${RESET}  source ~/.bashrc"
 echo
@@ -1046,15 +1187,27 @@ echo -e "    wkns <ns>          watch pods"
 $ARGO_ALIASES && echo -e "    argo_sync <app>    argocd sync + wait --health"
 echo -e "    explore            Windows Explorer here (WSL)"
 echo
-if $DO_TMUX; then
+if [[ "$MUX" == "tmux" ]]; then
   echo -e "  ${BOLD}tmux bindings:${RESET}"
-  echo -e "    Prefix + | / -       split (keeps dir)"
-  echo -e "    Alt + arrows         navigate panes"
-  echo -e "    Shift + arrows       switch windows"
+  echo -e "    Prefix + | / -       split pane (keeps dir)"
+  echo -e "    Alt + arrows         navigate panes (no prefix)"
+  echo -e "    Shift + arrows       switch windows (no prefix)"
   echo -e "    Prefix + h/j/k/l     navigate panes"
   echo -e "    Prefix + H/J/K/L     resize panes"
   echo -e "    Prefix + r           reload config"
   echo -e "    Prefix + Enter       copy mode (y → clip.exe)"
+  echo
+fi
+if [[ "$MUX" == "herdr" ]]; then
+  echo -e "  ${BOLD}herdr bindings:${RESET}"
+  echo -e "    Prefix + | / -       split pane"
+  echo -e "    Shift + arrows       switch tabs/windows"
+  echo -e "    Prefix + h/j/k/l     navigate panes"
+  echo -e "    Prefix + H/J/K/L     resize panes"
+  echo -e "    Prefix + c           new tab"
+  echo -e "    Prefix + S / N       pick session / new session"
+  echo -e "    Prefix + r           reload config"
+  echo -e "    Prefix + d           detach"
   echo
 fi
 echo -e "  ${DIM}Backups: <original>.bak.TIMESTAMP${RESET}"

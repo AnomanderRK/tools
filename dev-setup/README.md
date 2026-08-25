@@ -8,7 +8,7 @@ Interactive wizards to configure a terminal-based developer environment on WSL o
 
 | Script | Purpose |
 |---|---|
-| `shell-wizard.sh` | Shell prompt (Starship), Python toolchain, Kubernetes CLI, ArgoCD, Claude Code launcher, tmux, Windows Terminal theming |
+| `shell-wizard.sh` | Shell prompt (Starship), Python toolchain, Kubernetes CLI, ArgoCD, Claude Code launcher, herdr or tmux, Windows Terminal theming |
 | `neovim-wizard.sh` | Neovim + LazyVim: editor, LSPs, formatter, linter, Claude Code integration |
 
 Both wizards share a `lib/helpers.sh` library and follow the same pattern: gather all questions upfront, show a summary, confirm once, then write everything.
@@ -35,7 +35,7 @@ Everything else is installed by the wizards.
 bash ~/dev-setup/shell-wizard.sh
 ```
 
-Sets up Starship prompt, pyenv, uv, kubectl, tmux, Claude Code launcher, and Windows Terminal theme.
+Sets up Starship prompt, pyenv, uv, kubectl, herdr or tmux, Claude Code launcher, and Windows Terminal theme.
 
 ```bash
 bash ~/dev-setup/shell-wizard.sh --dry-run    # preview only
@@ -74,7 +74,7 @@ Two-line prompt showing: directory, git branch + status, Python virtualenv, kube
 ❯
 ```
 
-Theme choices: **Nord**, **Catppuccin Mocha**, **Tokyo Night**, **Solarized Light**, or Classic ANSI. The same palette drives both Starship and the tmux status bar.
+Theme choices: **Nord**, **Catppuccin Mocha**, **Tokyo Night**, **Solarized Light**, or Classic ANSI. The same palette drives both Starship and the multiplexer status bar.
 
 Config written to: `~/.config/starship.toml`
 
@@ -92,9 +92,10 @@ Sourced from `~/.bashrc` via a single line. Edit `~/.config/dev-setup/bashrc_dev
 | `kubectl` | Kubernetes CLI |
 | `kubecolor` | Colorized `kubectl` output |
 | `argocd` | ArgoCD CLI (optional) |
-| `tmux` | Terminal multiplexer (via apt) |
+| `herdr` | Terminal multiplexer for AI agents (via curl installer) |
+| `tmux` | Terminal multiplexer, classic option (via apt) |
 
-Already-installed tools are detected and skipped.
+One multiplexer is installed depending on your choice — herdr is the default recommendation. Already-installed tools are detected and skipped.
 
 ### Windows Terminal (WSL only)
 
@@ -249,7 +250,97 @@ wslpath_from_win 'C:\Users\...'  # convert Windows path to WSL path
 
 ---
 
-## tmux
+## Terminal multiplexer
+
+The wizard offers three options: **herdr** (default), **tmux**, or skip.
+
+### herdr
+
+herdr is an agent-aware terminal multiplexer built for AI coding workflows. Panes are automatically tagged as *working*, *blocked*, or *idle*, and you're alerted when an agent needs input. Sessions persist through disconnects and can be reattached from SSH or a mobile web UI.
+
+Install: `curl -fsSL https://herdr.dev/install.sh | sh`
+
+Config written to: `~/.config/herdr/config.toml`
+
+Start a session:
+
+```bash
+herdr
+```
+
+Reattach after disconnect: run `herdr` again in any terminal.
+
+#### Keybindings
+
+| Binding | Action |
+|---|---|
+| `Prefix + \|` | Split pane vertically (side by side) |
+| `Prefix + -` | Split pane horizontally (above/below) |
+| `Shift + arrows` | Switch tabs (no prefix needed) |
+| `Prefix + h/j/k/l` | Navigate panes (vim style) |
+| `Alt + arrows` | Navigate panes (no prefix needed) |
+| `Prefix + H/J/K/L` | Resize panes |
+| `Prefix + c` | New tab |
+| `Prefix + Shift+T` | Rename tab |
+| `Prefix + N` | New workspace |
+| `Prefix + w` | Workspace picker |
+| `Prefix + S` | Session navigator |
+| `Prefix + Shift+G` | New git worktree |
+| `Prefix + A` | Launch Claude Code in new pane |
+| `Prefix + r` | Reload `~/.config/herdr/config.toml` |
+| `Prefix + d` | Detach |
+
+Default prefix: `Ctrl+b` (same as tmux).
+
+#### Agent awareness
+
+herdr automatically detects Claude Code (and 20+ other agents) and tracks each pane's state:
+
+- Pane status indicators: *working* / *blocked* / *idle* (shown as distinct symbols)
+- Blocked state triggers an alert when the agent needs your input
+- After a server restart, Claude Code sessions resume automatically (requires Claude Code v6+)
+
+```bash
+herdr agent explain claude     # debug detection for a pane
+herdr agent rename claude "cc" # rename how a pane is labeled
+herdr agent attach claude      # focus the Claude pane directly (detach: ctrl+b q)
+```
+
+#### Workspaces and worktrees
+
+herdr *workspaces* group tabs per project — think of them as named sessions. *Worktrees* are git worktrees; herdr creates and manages them from `~/github` (your workspace root).
+
+```bash
+herdr worktree new feat/my-branch   # create worktree + open it in a new workspace
+```
+
+#### Session restore
+
+After a full restart, herdr restores workspace layout, tabs, panes, and working directories. Running processes reopen as fresh shells.
+
+Claude Code resumes its conversation automatically — this requires the herdr Claude integration, which the wizard installs automatically. To check or install manually:
+
+```bash
+herdr integration status          # check — should show "claude: current (vN)"
+herdr integration install claude  # install if missing
+```
+
+The integration installs a hook at `~/.claude/hooks/herdr-agent-state.sh` that reports session identity back to herdr, enabling `resume_agents_on_restore = true` (set in `config.toml`) to work.
+
+To also restore terminal scrollback output (disabled by default due to secret exposure risk):
+
+```toml
+[experimental]
+pane_history = true
+```
+
+### tmux
+
+Classic multiplexer, battle-tested option.
+
+Install: `sudo apt install tmux`
+
+Config written to: `~/.tmux.conf`
 
 Start a session:
 
@@ -273,6 +364,8 @@ tmux new -s work
 | `v` (copy mode) | Begin selection |
 | `y` (copy mode) | Copy to Windows clipboard (`clip.exe`) |
 | `Prefix + M-1..4` | Preset layouts (even-h, even-v, main-h, tiled) |
+
+Default prefix is configurable: `Ctrl+b`, `Ctrl+a`, or `Ctrl+Space`.
 
 Status bar shows: session name, kube context, git branch, hostname, clock.
 
@@ -299,7 +392,9 @@ To switch themes, re-run the relevant wizard and pick a different one.
 |---|---|
 | `~/.config/starship.toml` | Starship prompt config |
 | `~/.config/dev-setup/bashrc_devsetup.sh` | All aliases and functions |
-| `~/.tmux.conf` | tmux config |
+| `~/.config/herdr/config.toml` | herdr config (if herdr chosen) |
+| `~/.claude/hooks/herdr-agent-state.sh` | herdr Claude integration hook (if herdr chosen) |
+| `~/.tmux.conf` | tmux config (if tmux chosen) |
 | `~/.bashrc` | Gets one `source` line appended |
 | `C:\Users\<you>\...\Fonts\` | Nerd Font TTFs (WSL only) |
 | Windows Terminal `settings.json` | Color scheme + profile settings (WSL only) |
