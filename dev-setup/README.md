@@ -316,7 +316,10 @@ herdr worktree new feat/my-branch   # create worktree + open it in a new workspa
 
 #### Session restore
 
-After a full restart, herdr restores workspace layout, tabs, panes, and working directories. Running processes reopen as fresh shells.
+After a full restart, herdr restores workspace layout, tabs, panes, and working directories. Running processes reopen as fresh shells — with two exceptions wired up by this wizard:
+
+- **Claude Code** resumes its conversation automatically (see integration note below)
+- **Neovim** relaunches in any pane whose tab is named `nvim` — name your nvim tabs consistently and they restore hands-free
 
 Claude Code resumes its conversation automatically — this requires the herdr Claude integration, which the wizard installs automatically. To check or install manually:
 

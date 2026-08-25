@@ -484,6 +484,23 @@ complete -F _cc_complete cc
 alias cw='cd \"\$WORKSPACE_ROOT\"'
 "
 
+# ── herdr: relaunch nvim on restore ──────────────────────────────────────────
+# When herdr restores a session, panes open as fresh shells. Any tab named
+# "nvim" auto-relaunches nvim in the pane's working directory.
+if [[ "$MUX" == "herdr" ]]; then
+  BASHRC_SNIPPET+='
+# ── herdr pane restore ────────────────────────────────────────────────────────
+# Re-launch nvim automatically when herdr restores a pane whose tab is named
+# "nvim". Requires HERDR_TAB_ID (set by herdr in every managed pane).
+if [[ -n "${HERDR_TAB_ID:-}" ]] && command -v herdr &>/dev/null; then
+  _herdr_tab_name=$(herdr tab get "$HERDR_TAB_ID" 2>/dev/null \
+    | grep -o '"custom_name":"[^"]*"' | cut -d'"' -f4)
+  [[ "$_herdr_tab_name" == "nvim" ]] && nvim .
+  unset _herdr_tab_name
+fi
+'
+fi
+
 write_file "$OUTDIR/bashrc_devsetup.sh" "$BASHRC_SNIPPET"
 
 # ── Wire into ~/.bashrc ───────────────────────────────────────────────────────
