@@ -491,11 +491,16 @@ if [[ "$MUX" == "herdr" ]]; then
   BASHRC_SNIPPET+='
 # ── herdr pane restore ────────────────────────────────────────────────────────
 # Re-launch nvim automatically when herdr restores a pane whose tab is named
-# "nvim". Requires HERDR_TAB_ID (set by herdr in every managed pane).
+# "nvim". Also clears any stale Claude session ref on that pane so
+# resume_agents_on_restore does not inject a `claude --resume` next time.
 if [[ -n "${HERDR_TAB_ID:-}" ]] && command -v herdr &>/dev/null; then
   _herdr_tab_name=$(herdr tab get "$HERDR_TAB_ID" 2>/dev/null \
     | grep -o '"custom_name":"[^"]*"' | cut -d'"' -f4)
-  [[ "$_herdr_tab_name" == "nvim" ]] && nvim .
+  if [[ "$_herdr_tab_name" == "nvim" ]]; then
+    # Drop any agent session ref so herdr won't try to resume Claude here
+    herdr pane release-agent --source herdr:claude --agent claude "$HERDR_PANE_ID" 2>/dev/null || true
+    nvim .
+  fi
   unset _herdr_tab_name
 fi
 '
