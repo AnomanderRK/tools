@@ -495,7 +495,7 @@ if [[ "$MUX" == "herdr" ]]; then
 # resume_agents_on_restore does not inject a `claude --resume` next time.
 if [[ -n "${HERDR_TAB_ID:-}" ]] && command -v herdr &>/dev/null; then
   _herdr_tab_name=$(herdr tab get "$HERDR_TAB_ID" 2>/dev/null \
-    | grep -o '"custom_name":"[^"]*"' | cut -d'"' -f4)
+    | grep -o '"label":"[^"]*"' | cut -d'"' -f4)
   if [[ "$_herdr_tab_name" == "nvim" ]]; then
     # Drop any agent session ref so herdr won't try to resume Claude here
     herdr pane release-agent --source herdr:claude --agent claude "$HERDR_PANE_ID" 2>/dev/null || true
