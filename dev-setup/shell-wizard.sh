@@ -448,11 +448,8 @@ if command -v kubectl &>/dev/null; then
 fi
 $ARGO_BLOCK
 
-# ── stern ─────────────────────────────────────────────────────────────────────
+# stern
 if command -v stern &>/dev/null; then
-  # stern <pod-pattern>              tail logs from all matching pods
-  # stern <pattern> -n <namespace>   scope to namespace
-  # stern <pattern> --all-namespaces tail across all namespaces
   alias stn='stern'
   source <(stern --completion bash 2>/dev/null) || true
 fi
@@ -502,13 +499,14 @@ alias cw='cd \"\$WORKSPACE_ROOT\"'
 # "nvim" auto-relaunches nvim in the pane's working directory.
 # New panes (revision=0) are skipped so ctrl+t opens a plain terminal.
 if [[ "$MUX" == "herdr" ]]; then
-  BASHRC_SNIPPET+='
-# ── herdr pane restore ────────────────────────────────────────────────────────
+  BASHRC_SNIPPET+=$(cat <<'HERDR_RESTORE'
+
+# herdr pane restore
 # Re-launch nvim automatically when herdr restores a pane whose tab is named
 # "nvim". Also clears any stale Claude session ref on that pane so
-# resume_agents_on_restore does not inject a `claude --resume` next time.
+# resume_agents_on_restore does not inject a claude --resume next time.
 # Only fires on restored panes (revision >= 1); skips brand-new panes so that
-# ctrl+t in an nvim-named tab opens a plain terminal, not another nvim.
+# opening a new pane in an nvim-named tab gives a plain terminal, not nvim.
 if [[ -n "${HERDR_TAB_ID:-}" ]] && command -v herdr &>/dev/null; then
   _herdr_tab_name=$(herdr tab get "$HERDR_TAB_ID" 2>/dev/null \
     | grep -o '"label":"[^"]*"' | cut -d'"' -f4)
@@ -516,7 +514,6 @@ if [[ -n "${HERDR_TAB_ID:-}" ]] && command -v herdr &>/dev/null; then
     _herdr_pane_revision=$(herdr pane get "$HERDR_PANE_ID" 2>/dev/null \
       | grep -o '"revision":[0-9]*' | cut -d: -f2)
     if [[ "${_herdr_pane_revision:-0}" -ge 1 ]]; then
-      # Drop any agent session ref so herdr won't try to resume Claude here
       herdr pane release-agent --source herdr:claude --agent claude "$HERDR_PANE_ID" 2>/dev/null || true
       nvim .
     fi
@@ -524,7 +521,8 @@ if [[ -n "${HERDR_TAB_ID:-}" ]] && command -v herdr &>/dev/null; then
   fi
   unset _herdr_tab_name
 fi
-'
+HERDR_RESTORE
+)
 fi
 
 write_file "$OUTDIR/bashrc_devsetup.sh" "$BASHRC_SNIPPET"
