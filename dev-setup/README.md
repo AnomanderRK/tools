@@ -236,6 +236,7 @@ argo_logs my-app               # stream live app logs
 
 ```bash
 gs / gd / gds        # status / diff / diff --staged
+gdc                  # diff current branch vs main (what a PR would show)
 ga / gc / gp / gpl   # add / commit / push / pull --rebase
 gl                   # log --oneline --graph (last 20)
 gco / gb / gst       # checkout / branch -vv / stash
@@ -247,7 +248,9 @@ gco / gb / gst       # checkout / branch -vv / stash
 
 ```bash
 git diff                          # current working tree changes
-git diff main..feat/my-branch     # compare branches
+gdc                               # current branch vs main (PR view)
+git diff main..feat/my-branch     # all commits between two branches
+git diff main...feat/my-branch    # only changes since branches diverged
 git diff HEAD~3                   # last 3 commits
 git show abc1234                  # single commit
 git log -p                        # full history with inline diffs

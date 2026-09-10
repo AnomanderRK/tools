@@ -394,6 +394,7 @@ alias gco='git checkout'
 alias gs='git status -sb'
 alias gd='git diff'
 alias gds='git diff --staged'
+alias gdc='git diff main...HEAD'        # changes on current branch vs main
 alias gp='git push'
 alias gpl='git pull --rebase'
 alias gb='git branch -vv'
@@ -487,19 +488,27 @@ alias cw='cd \"\$WORKSPACE_ROOT\"'
 # ── herdr: relaunch nvim on restore ──────────────────────────────────────────
 # When herdr restores a session, panes open as fresh shells. Any tab named
 # "nvim" auto-relaunches nvim in the pane's working directory.
+# New panes (revision=0) are skipped so ctrl+t opens a plain terminal.
 if [[ "$MUX" == "herdr" ]]; then
   BASHRC_SNIPPET+='
 # ── herdr pane restore ────────────────────────────────────────────────────────
 # Re-launch nvim automatically when herdr restores a pane whose tab is named
 # "nvim". Also clears any stale Claude session ref on that pane so
 # resume_agents_on_restore does not inject a `claude --resume` next time.
+# Only fires on restored panes (revision >= 1); skips brand-new panes so that
+# ctrl+t in an nvim-named tab opens a plain terminal, not another nvim.
 if [[ -n "${HERDR_TAB_ID:-}" ]] && command -v herdr &>/dev/null; then
   _herdr_tab_name=$(herdr tab get "$HERDR_TAB_ID" 2>/dev/null \
     | grep -o '"label":"[^"]*"' | cut -d'"' -f4)
   if [[ "$_herdr_tab_name" == "nvim" ]]; then
-    # Drop any agent session ref so herdr won't try to resume Claude here
-    herdr pane release-agent --source herdr:claude --agent claude "$HERDR_PANE_ID" 2>/dev/null || true
-    nvim .
+    _herdr_pane_revision=$(herdr pane get "$HERDR_PANE_ID" 2>/dev/null \
+      | grep -o '"revision":[0-9]*' | cut -d: -f2)
+    if [[ "${_herdr_pane_revision:-0}" -ge 1 ]]; then
+      # Drop any agent session ref so herdr won't try to resume Claude here
+      herdr pane release-agent --source herdr:claude --agent claude "$HERDR_PANE_ID" 2>/dev/null || true
+      nvim .
+    fi
+    unset _herdr_pane_revision
   fi
   unset _herdr_tab_name
 fi
