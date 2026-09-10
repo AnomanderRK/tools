@@ -92,6 +92,9 @@ Sourced from `~/.bashrc` via a single line. Edit `~/.config/dev-setup/bashrc_dev
 | `kubectl` | Kubernetes CLI |
 | `kubecolor` | Colorized `kubectl` output |
 | `argocd` | ArgoCD CLI (optional) |
+| `k9s` | Kubernetes TUI — browse pods, logs, exec, ArgoCD apps |
+| `stern` | Multi-pod log tailing across namespaces |
+| `kubectx` + `kubens` | Interactive context and namespace switcher |
 | `herdr` | Terminal multiplexer for AI agents (via curl installer) |
 | `tmux` | Terminal multiplexer, classic option (via apt) |
 
@@ -218,10 +221,64 @@ kge                               # get events --sort-by=.lastTimestamp
 kl / klf <pod>                    # logs / logs -f
 ke <pod> -- bash                  # exec -it
 kaf / kdf manifests/deploy.yaml   # apply -f / delete -f
-kctx / kns                        # switch context / namespace
+kctx / kns                        # switch context / namespace (uses kubectx/kubens if installed)
 kgctx                             # list all contexts
 klns <namespace> <prefix>         # tail logs by namespace + pod prefix
 wkns <namespace>                  # watch pods (refreshes every 2s)
+```
+
+### k9s
+
+k9s is a TUI that lets you browse and manage the entire cluster without typing kubectl commands. It handles both raw pods and ArgoCD-managed apps.
+
+```bash
+k9s                  # open (uses current context)
+k9s -n my-namespace  # open scoped to a namespace
+```
+
+Key k9s bindings:
+
+| Key | Action |
+|---|---|
+| `0` | Show all namespaces |
+| `:pod` | Navigate to pods view |
+| `:svc` | Navigate to services view |
+| `:deploy` | Navigate to deployments view |
+| `:ing` | Navigate to ingresses view |
+| `l` | View logs for selected pod |
+| `s` | Shell into selected pod (`exec -it`) |
+| `d` | Describe resource |
+| `ctrl+d` | Delete resource |
+| `ctrl+k` | Kill pod |
+| `/` | Filter by name |
+| `?` | Help / full keybinding list |
+
+To browse ArgoCD apps in k9s: type `:application` (requires ArgoCD CRDs in the cluster).
+
+### stern
+
+stern tails logs from multiple pods simultaneously, color-coded by pod name. Useful when a service runs multiple replicas or you want to watch several services at once.
+
+```bash
+stern my-service                        # all pods matching "my-service"
+stern my-service -n my-namespace        # scoped to namespace
+stern "api|worker" -n production        # regex: tail api AND worker pods
+stern my-service --since 15m            # last 15 minutes only
+stern my-service --container main       # specific container in pod
+stn my-service                          # alias for stern
+```
+
+### kubectx + kubens
+
+`kctx` and `kns` are wired to kubectx/kubens when installed, giving you an interactive fuzzy picker instead of typing context/namespace names.
+
+```bash
+kctx                  # interactive context picker (fzf if installed)
+kctx my-cluster       # switch directly by name
+kns                   # interactive namespace picker
+kns my-namespace      # switch directly by name
+kctx -                # switch back to previous context
+kns -                 # switch back to previous namespace
 ```
 
 ### ArgoCD
@@ -231,6 +288,8 @@ acd / acdal / acdas / acdaw   # argocd / app list / app sync / app wait
 argo_sync my-app               # sync + wait --health in one command
 argo_logs my-app               # stream live app logs
 ```
+
+For a visual overview of ArgoCD app health and sync status, use k9s `:application` instead of `argocd app list`.
 
 ### Git
 

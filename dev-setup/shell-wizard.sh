@@ -428,6 +428,9 @@ if command -v kubectl &>/dev/null; then
   alias kctx='kubectl config use-context'
   alias kns='kubectl config set-context --current --namespace'
   alias kgctx='kubectl config get-contexts'
+  # prefer kubectx/kubens interactive switchers when installed
+  command -v kubectx &>/dev/null && alias kctx='kubectx'
+  command -v kubens  &>/dev/null && alias kns='kubens'
 
   # Tail logs for first pod matching prefix: klns <namespace> <prefix>
   klns() {
@@ -444,6 +447,15 @@ if command -v kubectl &>/dev/null; then
   complete -o default -F __start_kubectl k
 fi
 $ARGO_BLOCK
+
+# ── stern ─────────────────────────────────────────────────────────────────────
+if command -v stern &>/dev/null; then
+  # stern <pod-pattern>              tail logs from all matching pods
+  # stern <pattern> -n <namespace>   scope to namespace
+  # stern <pattern> --all-namespaces tail across all namespaces
+  alias stn='stern'
+  source <(stern --completion bash 2>/dev/null) || true
+fi
 
 # ── WSL helpers ───────────────────────────────────────────────
 if grep -qi microsoft /proc/version 2>/dev/null; then
@@ -755,6 +767,54 @@ if $ARGO_ALIASES; then
       install_ok "installed $ARGO_VER"
     else install_fail "argocd" "https://argo-cd.readthedocs.io/en/stable/cli_installation/"
     fi
+  fi
+fi
+
+# ── k9s ───────────────────────────────────────────────────────────────────────
+echo -en "  ${BOLD}k9s${RESET} (Kubernetes TUI)... "
+if command -v k9s &>/dev/null; then
+  install_skip "$(k9s version --short 2>/dev/null | head -1)"
+elif $DRY_RUN; then install_dry "k9s"
+else
+  K9S_TAG=$(curl -fsSL https://api.github.com/repos/derailed/k9s/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+  K9S_URL="https://github.com/derailed/k9s/releases/download/${K9S_TAG}/k9s_Linux_amd64.tar.gz"
+  if curl -fsSL "$K9S_URL" | tar -xz -C "$INSTALL_DIR" k9s 2>/dev/null; then
+    install_ok "installed ${K9S_TAG}"
+  else install_fail "k9s" "https://github.com/derailed/k9s/releases"
+  fi
+fi
+
+# ── stern ─────────────────────────────────────────────────────────────────────
+echo -en "  ${BOLD}stern${RESET} (multi-pod log tailing)... "
+if command -v stern &>/dev/null; then
+  install_skip "$(stern --version 2>/dev/null)"
+elif $DRY_RUN; then install_dry "stern"
+else
+  STERN_TAG=$(curl -fsSL https://api.github.com/repos/stern/stern/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+  STERN_VER="${STERN_TAG#v}"
+  STERN_URL="https://github.com/stern/stern/releases/download/${STERN_TAG}/stern_${STERN_VER}_linux_amd64.tar.gz"
+  if curl -fsSL "$STERN_URL" | tar -xz -C "$INSTALL_DIR" stern 2>/dev/null; then
+    install_ok "installed ${STERN_TAG}"
+  else install_fail "stern" "https://github.com/stern/stern/releases"
+  fi
+fi
+
+# ── kubectx + kubens ──────────────────────────────────────────────────────────
+echo -en "  ${BOLD}kubectx${RESET} + ${BOLD}kubens${RESET} (context/namespace switcher)... "
+if command -v kubectx &>/dev/null && command -v kubens &>/dev/null; then
+  install_skip "present"
+elif $DRY_RUN; then install_dry "kubectx + kubens"
+else
+  KCTX_TAG=$(curl -fsSL https://api.github.com/repos/ahmetb/kubectx/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+  KCTX_VER="${KCTX_TAG#v}"
+  KCTX_URL="https://github.com/ahmetb/kubectx/releases/download/${KCTX_TAG}/kubectx_${KCTX_VER}_linux_x86_64.tar.gz"
+  KNS_URL="https://github.com/ahmetb/kubectx/releases/download/${KCTX_TAG}/kubens_${KCTX_VER}_linux_x86_64.tar.gz"
+  OK=true
+  curl -fsSL "$KCTX_URL" | tar -xz -C "$INSTALL_DIR" kubectx 2>/dev/null || OK=false
+  curl -fsSL "$KNS_URL"  | tar -xz -C "$INSTALL_DIR" kubens  2>/dev/null || OK=false
+  if $OK; then
+    install_ok "installed ${KCTX_TAG}"
+  else install_fail "kubectx/kubens" "https://github.com/ahmetb/kubectx/releases"
   fi
 fi
 
