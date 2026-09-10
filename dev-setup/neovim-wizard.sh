@@ -235,6 +235,25 @@ if $DO_LAZYGIT; then
   fi
 fi
 
+# ── delta (git diff pager) ────────────────────────────────────────────────────
+echo -en "  ${BOLD}delta${RESET} (git diff pager)... "
+if command -v delta &>/dev/null; then
+  install_skip "$(delta --version 2>/dev/null)"
+elif $DRY_RUN; then
+  install_dry "delta"
+else
+  DELTA_TAG=$(curl -fsSL https://api.github.com/repos/dandavison/delta/releases/latest \
+    | grep '"tag_name"' | cut -d'"' -f4)
+  DELTA_VER="${DELTA_TAG#v}"
+  DELTA_URL="https://github.com/dandavison/delta/releases/download/${DELTA_TAG}/delta-${DELTA_VER}-x86_64-unknown-linux-musl.tar.gz"
+  if curl -fsSL "$DELTA_URL" | tar -xz --strip-components=1 -C "$INSTALL_DIR" \
+      "delta-${DELTA_VER}-x86_64-unknown-linux-musl/delta" 2>/dev/null; then
+    install_ok "installed ${DELTA_TAG}"
+  else
+    install_fail "delta" "https://github.com/dandavison/delta/releases"
+  fi
+fi
+
 echo
 
 # ═══════════════════════════════════════════════════════════════════════════════

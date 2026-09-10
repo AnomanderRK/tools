@@ -116,6 +116,7 @@ One multiplexer is installed depending on your choice — herdr is the default r
 | `ripgrep` | Fast search, used by Telescope |
 | `fd` | Fast file finder, used by Telescope |
 | `lazygit` | TUI git client (optional) |
+| `delta` | Git diff pager with syntax highlighting and side-by-side view |
 
 ### LSPs — installed on first `nvim` launch via Mason
 
@@ -237,6 +238,51 @@ gs / gd / gds        # status / diff / diff --staged
 ga / gc / gp / gpl   # add / commit / push / pull --rebase
 gl                   # log --oneline --graph (last 20)
 gco / gb / gst       # checkout / branch -vv / stash
+```
+
+### Git diff — delta + lazygit
+
+**delta** replaces the default git pager. Every `git diff`, `git log -p`, `git show`, and `git blame` automatically gets syntax highlighting, line numbers, and side-by-side layout.
+
+```bash
+git diff                          # current working tree changes
+git diff main..feat/my-branch     # compare branches
+git diff HEAD~3                   # last 3 commits
+git show abc1234                  # single commit
+git log -p                        # full history with inline diffs
+```
+
+Navigate hunks with `n` / `N` while in the pager.
+
+**lazygit** gives you a full TUI for commits, branches, and PR-style diffs:
+
+```bash
+lazygit          # open from terminal
+# Space+gg       # open from inside nvim
+```
+
+Key lazygit bindings for diff navigation:
+
+| Key | Action |
+|---|---|
+| `1-5` | Switch panels (Status / Files / Branches / Commits / Stash) |
+| `Enter` | Drill into file diff |
+| `[` / `]` | Previous / next file in diff |
+| `←` / `→` | Scroll diff left/right |
+| `{` / `}` | Previous / next hunk |
+| `d` (on branch) | View diff against current branch |
+| `space` (on commit) | Cherry-pick |
+| `D` | Diff menu (choose base) |
+| `?` | Help |
+
+To compare two branches visually:
+1. Open lazygit → go to Branches panel (`3`)
+2. Navigate to the target branch, press `d` → **diff branch against current**
+
+To review a PR locally:
+```bash
+gh pr checkout 123   # check out the PR branch
+lazygit              # browse commits and file diffs in the PR
 ```
 
 ### WSL helpers
