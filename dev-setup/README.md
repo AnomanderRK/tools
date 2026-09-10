@@ -95,6 +95,7 @@ Sourced from `~/.bashrc` via a single line. Edit `~/.config/dev-setup/bashrc_dev
 | `k9s` | Kubernetes TUI — browse pods, logs, exec, ArgoCD apps |
 | `stern` | Multi-pod log tailing across namespaces |
 | `kubectx` + `kubens` | Interactive context and namespace switcher |
+| `fzf` | Fuzzy finder — enhances kubectx/kubens, shell history, file picker |
 | `herdr` | Terminal multiplexer for AI agents (via curl installer) |
 | `tmux` | Terminal multiplexer, classic option (via apt) |
 
@@ -221,7 +222,7 @@ kge                               # get events --sort-by=.lastTimestamp
 kl / klf <pod>                    # logs / logs -f
 ke <pod> -- bash                  # exec -it
 kaf / kdf manifests/deploy.yaml   # apply -f / delete -f
-kctx / kns                        # switch context / namespace (uses kubectx/kubens if installed)
+kctx / kns                        # switch context / namespace (interactive picker with fzf)
 kgctx                             # list all contexts
 klns <namespace> <prefix>         # tail logs by namespace + pod prefix
 wkns <namespace>                  # watch pods (refreshes every 2s)
@@ -229,56 +230,126 @@ wkns <namespace>                  # watch pods (refreshes every 2s)
 
 ### k9s
 
-k9s is a TUI that lets you browse and manage the entire cluster without typing kubectl commands. It handles both raw pods and ArgoCD-managed apps.
+k9s is a TUI for the entire cluster — browse, inspect, exec, and manage resources without typing kubectl commands. Handles both raw pods and ArgoCD-managed apps.
 
 ```bash
-k9s                  # open (uses current context)
-k9s -n my-namespace  # open scoped to a namespace
+k9s                        # open (uses current context + namespace)
+k9s -n my-namespace        # open scoped to a namespace
+k9s --context my-cluster   # open with a specific context
 ```
 
-Key k9s bindings:
+**Navigation** — k9s works like a browser. Type a resource name in the command bar to switch views:
+
+| Command | View |
+|---|---|
+| `:pod` | Pods |
+| `:svc` | Services |
+| `:deploy` | Deployments |
+| `:ing` | Ingresses |
+| `:ns` | Namespaces |
+| `:ctx` | Contexts |
+| `:application` | ArgoCD apps (requires ArgoCD CRDs) |
+| `/` | Filter by name in any view |
+| `0` | Show all namespaces in current view |
+| `Esc` | Go back |
+| `?` | Full keybinding help |
+
+**On a pod:**
 
 | Key | Action |
 |---|---|
-| `0` | Show all namespaces |
-| `:pod` | Navigate to pods view |
-| `:svc` | Navigate to services view |
-| `:deploy` | Navigate to deployments view |
-| `:ing` | Navigate to ingresses view |
-| `l` | View logs for selected pod |
-| `s` | Shell into selected pod (`exec -it`) |
-| `d` | Describe resource |
-| `ctrl+d` | Delete resource |
-| `ctrl+k` | Kill pod |
-| `/` | Filter by name |
-| `?` | Help / full keybinding list |
+| `l` | Tail logs (live, filterable with `/`) |
+| `s` | Shell into it (`exec -it bash`) |
+| `d` | Describe |
+| `y` | View full YAML |
+| `e` | Edit manifest live |
+| `shift+f` | Port-forward (opens dialog) |
+| `ctrl+k` | Delete/kill pod |
 
-To browse ArgoCD apps in k9s: type `:application` (requires ArgoCD CRDs in the cluster).
+**Inside log view:**
+
+| Key | Action |
+|---|---|
+| `/` | Filter log lines by pattern |
+| `w` | Toggle line wrap |
+| `f` | Fullscreen |
+| `s` | Save logs to file |
+
+**For ArgoCD apps** (`:application`):
+
+| Key | Action |
+|---|---|
+| `s` | Sync the app |
+| `l` | Tail app logs |
+| `d` | Describe the Application resource |
+| `y` | View full YAML |
+
+**Contexts and namespaces without leaving k9s:**
+- `:ctx` → pick a context with Enter to switch
+- `:ns` → pick a namespace with Enter to switch
 
 ### stern
 
-stern tails logs from multiple pods simultaneously, color-coded by pod name. Useful when a service runs multiple replicas or you want to watch several services at once.
+stern tails logs from multiple pods simultaneously, color-coded by pod name. Where `kubectl logs -f` covers one pod, stern covers all replicas and multiple services at once.
 
 ```bash
-stern my-service                        # all pods matching "my-service"
-stern my-service -n my-namespace        # scoped to namespace
-stern "api|worker" -n production        # regex: tail api AND worker pods
-stern my-service --since 15m            # last 15 minutes only
-stern my-service --container main       # specific container in pod
-stn my-service                          # alias for stern
+# All replicas of a service
+stern my-service -n my-namespace
+
+# Multiple services at once (regex)
+stern "api|worker|scheduler" -n production
+
+# Across all namespaces
+stern my-service --all-namespaces
+
+# Only lines matching a pattern
+stern my-service --filter "ERROR|WARN"
+
+# Last 15 minutes then live
+stern my-service --since 15m
+
+# Specific container in multi-container pods
+stern my-service --container main
+
+# With timestamps
+stern my-service -t
+
+# JSON output — pipe to jq for structured logs
+stern my-service --output json | jq -r 'select(.level=="error") | .message'
+
+stn my-service   # alias for stern
 ```
 
 ### kubectx + kubens
 
-`kctx` and `kns` are wired to kubectx/kubens when installed, giving you an interactive fuzzy picker instead of typing context/namespace names.
+`kctx` and `kns` use kubectx/kubens with an interactive fzf picker when fzf is installed.
 
 ```bash
-kctx                  # interactive context picker (fzf if installed)
-kctx my-cluster       # switch directly by name
-kns                   # interactive namespace picker
-kns my-namespace      # switch directly by name
-kctx -                # switch back to previous context
-kns -                 # switch back to previous namespace
+kctx              # fuzzy-search context picker
+kctx my-cluster   # switch directly by name
+kctx -            # toggle back to previous context
+
+kns               # fuzzy-search namespace picker
+kns my-namespace  # switch directly by name
+kns -             # toggle back to previous namespace
+```
+
+The `-` toggle is the most useful day-to-day — switch to `production` to check something, then `kctx -` to go straight back.
+
+### fzf
+
+fzf is a general-purpose fuzzy finder wired into the shell. Once installed it enhances kubectx/kubens, shell history, and file navigation automatically.
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+R` | Fuzzy search shell history (replaces default reverse-i-search) |
+| `Ctrl+T` | Fuzzy search files and insert path at cursor |
+| `Alt+C` | Fuzzy search directories and cd into selection |
+
+```bash
+# Use fzf inline in any command
+vim $(fzf)                          # fuzzy-pick a file to open
+k logs $(kubectl get pods | fzf)    # fuzzy-pick a pod to tail
 ```
 
 ### ArgoCD
@@ -289,7 +360,40 @@ argo_sync my-app               # sync + wait --health in one command
 argo_logs my-app               # stream live app logs
 ```
 
-For a visual overview of ArgoCD app health and sync status, use k9s `:application` instead of `argocd app list`.
+For a visual overview of all app health and sync status, use k9s `:application` — it's faster than `argocd app list` for scanning many apps at once.
+
+---
+
+### Kubernetes debugging workflow
+
+Typical flow for investigating an issue in a running service:
+
+```bash
+# 1. Switch to the right cluster and namespace
+kctx          # pick cluster
+kns           # pick namespace
+
+# 2. Open k9s for a visual overview
+k9s
+# → :pod to check pod status
+# → on a crashing pod: d (describe) to see events and error messages
+# → l to tail logs, / to filter for ERROR
+
+# 3. If you need logs from multiple replicas or services at once
+stern my-service --since 30m --filter "ERROR|Exception"
+
+# 4. For structured JSON logs
+stern my-service --output json | jq -r 'select(.level=="error") | {time,message,trace}'
+
+# 5. Check if ArgoCD shows the app as degraded
+k9s → :application
+# or
+acdal | grep my-app
+
+# 6. Sync if needed
+argo_sync my-app      # sync + wait for health
+# or from k9s: :application → s
+```
 
 ### Git
 

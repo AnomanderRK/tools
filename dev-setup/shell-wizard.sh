@@ -454,6 +454,12 @@ if command -v stern &>/dev/null; then
   source <(stern --completion bash 2>/dev/null) || true
 fi
 
+# fzf — fuzzy finder shell integration
+# Ctrl+R: fuzzy history search  Ctrl+T: fuzzy file picker  Alt+C: fuzzy cd
+if command -v fzf &>/dev/null; then
+  eval \"\$(fzf --bash 2>/dev/null)\" || source /usr/share/doc/fzf/examples/key-bindings.bash 2>/dev/null || true
+fi
+
 # ── WSL helpers ───────────────────────────────────────────────
 if grep -qi microsoft /proc/version 2>/dev/null; then
   alias explore='explorer.exe .'
@@ -816,7 +822,20 @@ else
   fi
 fi
 
-# ── tmux ──────────────────────────────────────────────────────────────────────
+# ── fzf ───────────────────────────────────────────────────────────────────────
+echo -en "  ${BOLD}fzf${RESET} (fuzzy finder)... "
+if command -v fzf &>/dev/null; then
+  install_skip "$(fzf --version 2>/dev/null)"
+elif $DRY_RUN; then install_dry "fzf"
+else
+  FZF_TAG=$(curl -fsSL https://api.github.com/repos/junegunn/fzf/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+  FZF_VER="${FZF_TAG#v}"
+  FZF_URL="https://github.com/junegunn/fzf/releases/download/${FZF_TAG}/fzf-${FZF_VER}-linux_amd64.tar.gz"
+  if curl -fsSL "$FZF_URL" | tar -xz -C "$INSTALL_DIR" fzf 2>/dev/null; then
+    install_ok "installed ${FZF_TAG}"
+  else install_fail "fzf" "https://github.com/junegunn/fzf/releases"
+  fi
+fi
 if [[ "$MUX" == "tmux" ]]; then
   echo -en "  ${BOLD}tmux${RESET}... "
   if command -v tmux &>/dev/null; then
