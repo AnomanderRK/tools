@@ -243,6 +243,9 @@ if $DO_LAZYGIT && command -v delta &>/dev/null; then
   paging:
     colorArg: always
     pager: delta --paging=never --side-by-side --line-numbers
+  diffRenderers:
+    - name: delta
+      command: delta --paging=always --side-by-side --line-numbers "{{from}}" "{{to}}"
 '
   if ! $DRY_RUN; then
     mkdir -p "$HOME/.config/lazygit"
