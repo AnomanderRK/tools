@@ -235,7 +235,22 @@ if $DO_LAZYGIT; then
   fi
 fi
 
-# ── delta (git diff pager) ────────────────────────────────────────────────────
+# ── lazygit + delta config ────────────────────────────────────────────────────
+# Wire delta as lazygit's diff pager so diffs inside lazygit get the same
+# syntax highlighting and side-by-side layout as plain `git diff`.
+if $DO_LAZYGIT && command -v delta &>/dev/null; then
+  LAZYGIT_CONFIG='git:
+  paging:
+    colorArg: always
+    pager: delta --paging=never --side-by-side --line-numbers
+'
+  if ! $DRY_RUN; then
+    mkdir -p "$HOME/.config/lazygit"
+    write_file "$HOME/.config/lazygit/config.yml" "$LAZYGIT_CONFIG"
+  else
+    info "[dry-run] would write ~/.config/lazygit/config.yml"
+  fi
+fi
 echo -en "  ${BOLD}delta${RESET} (git diff pager)... "
 if command -v delta &>/dev/null; then
   install_skip "$(delta --version 2>/dev/null)"

@@ -138,6 +138,7 @@ One multiplexer is installed depending on your choice — herdr is the default r
 | `~/.config/nvim/lua/plugins/colorscheme.lua` | Theme (matches your shell theme) |
 | `~/.config/nvim/lua/plugins/lsp.lua` | Mason, LSPs, conform, nvim-lint |
 | `~/.config/nvim/lua/plugins/tools.lua` | toggleterm, Telescope, LazyGit, Copilot |
+| `~/.config/lazygit/config.yml` | lazygit config (delta pager wired in if both installed) |
 | `~/.config/nvim/lua/plugins/extras.lua` | claudecode.nvim, markdown, surround, todo, trouble, diffview, oil, typescript-tools |
 | `~/.config/dev-setup/bashrc_neovim.sh` | Shell aliases and functions |
 | `~/.bashrc` | Gets one `source` line appended |
@@ -254,7 +255,7 @@ git log -p                        # full history with inline diffs
 
 Navigate hunks with `n` / `N` while in the pager.
 
-**lazygit** gives you a full TUI for commits, branches, and PR-style diffs:
+**lazygit** gives you a full TUI for commits, branches, and PR-style diffs. When delta is installed, lazygit automatically uses it for all diff views — same syntax highlighting and side-by-side layout as the terminal pager.
 
 ```bash
 lazygit          # open from terminal
