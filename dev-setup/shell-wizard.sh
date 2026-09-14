@@ -517,8 +517,13 @@ if [[ -n "${HERDR_TAB_ID:-}" ]] && command -v herdr &>/dev/null; then
   _herdr_tab_name=$(herdr tab get "$HERDR_TAB_ID" 2>/dev/null \
     | grep -o '"label":"[^"]*"' | cut -d'"' -f4)
   if [[ "$_herdr_tab_name" == "nvim" ]]; then
-    herdr pane release-agent --source herdr:claude --agent claude "$HERDR_PANE_ID" 2>/dev/null || true
-    nvim .
+    _herdr_pane_revision=$(herdr pane get "$HERDR_PANE_ID" 2>/dev/null \
+      | grep -o '"revision":[0-9]*' | cut -d: -f2)
+    if [[ "${_herdr_pane_revision:-0}" -ge 1 ]]; then
+      herdr pane release-agent --source herdr:claude --agent claude "$HERDR_PANE_ID" 2>/dev/null || true
+      nvim .
+    fi
+    unset _herdr_pane_revision
   fi
   unset _herdr_tab_name
 fi
