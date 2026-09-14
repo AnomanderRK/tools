@@ -513,6 +513,14 @@ if [[ "$MUX" == "herdr" ]]; then
 # resume_agents_on_restore does not inject a claude --resume next time.
 # Only fires on restored panes (revision >= 1); skips brand-new panes so that
 # opening a new pane in an nvim-named tab gives a plain terminal, not nvim.
+#
+# TODO: revision check is broken — herdr restores panes with revision=0 so
+# the guard blocks every restore. Need a better signal to distinguish a
+# restored pane from a brand new one before this can work correctly.
+# Options to explore:
+#   - herdr API: check if pane existed in session.json before shell started
+#   - sentinel file per pane ID written on clean nvim exit, absent = restore
+#   - herdr expose a HERDR_PANE_RESTORED env var in future versions
 if [[ -n "${HERDR_TAB_ID:-}" ]] && command -v herdr &>/dev/null; then
   _herdr_tab_name=$(herdr tab get "$HERDR_TAB_ID" 2>/dev/null \
     | grep -o '"label":"[^"]*"' | cut -d'"' -f4)
