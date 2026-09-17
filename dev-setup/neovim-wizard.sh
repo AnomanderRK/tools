@@ -461,9 +461,9 @@ vim.api.nvim_create_autocmd(\"FileType\", {
 })
 
 -- ── File path copy ───────────────────────────────────────────────────────────
-map(\"n\", \"<leader>cp\", function() vim.fn.setreg(\"+\", vim.fn.expand(\"%:p\")) end, { desc = \"Copy absolute path\" })
-map(\"n\", \"<leader>cr\", function() vim.fn.setreg(\"+\", vim.fn.expand(\"%:.\")) end,  { desc = \"Copy relative path\" })
-map(\"n\", \"<leader>cf\", function() vim.fn.setreg(\"+\", vim.fn.expand(\"%:t\")) end,  { desc = \"Copy filename\" })
+map(\"n\", \"<leader>yp\", function() vim.fn.setreg(\"+\", vim.fn.expand(\"%:p\")) end, { desc = \"Copy absolute path\" })
+map(\"n\", \"<leader>yr\", function() vim.fn.setreg(\"+\", vim.fn.expand(\"%:.\")) end,  { desc = \"Copy relative path\" })
+map(\"n\", \"<leader>yf\", function() vim.fn.setreg(\"+\", vim.fn.expand(\"%:t\")) end,  { desc = \"Copy filename\" })
 $LAZYGIT_KEYMAP
 "
 write_file "$HOME/.config/nvim/lua/config/keymaps.lua" "$KEYMAPS_LUA"

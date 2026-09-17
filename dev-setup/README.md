@@ -167,9 +167,9 @@ One multiplexer is installed depending on your choice — herdr is the default r
 | `Space` (alone) | Show all keybindings (which-key) |
 | `<Space>cc` | Toggle Claude Code (context-aware) |
 | `<Space>gg` | LazyGit (if installed) |
-| `<Space>cp` | Copy absolute file path to clipboard |
-| `<Space>cr` | Copy relative file path to clipboard |
-| `<Space>cf` | Copy filename to clipboard |
+| `<Space>yp` | Copy absolute file path to clipboard |
+| `<Space>yr` | Copy relative file path to clipboard |
+| `<Space>yf` | Copy filename to clipboard |
 
 ### Claude Code integration
 
