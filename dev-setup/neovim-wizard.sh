@@ -431,7 +431,7 @@ map({ \"n\", \"i\", \"v\" }, \"<C-s>\", \"<cmd>w<cr><esc>\", { desc = \"Save fil
 -- ── Buffer navigation (like VSCode tabs) ─────────────────────────────────────
 map(\"n\", \"<S-h>\", \"<cmd>bprevious<cr>\", { desc = \"Prev buffer\" })
 map(\"n\", \"<S-l>\", \"<cmd>bnext<cr>\",     { desc = \"Next buffer\" })
-map(\"n\", \"<leader>q\", \"<cmd>bd<cr>\",    { desc = \"Close buffer\" })
+map(\"n\", \"<leader>bd\", \"<cmd>bd<cr>\",   { desc = \"Close buffer\" })
 
 -- ── File picker / search ─────────────────────────────────────────────────────
 map(\"n\", \"<C-p>\", \"<cmd>Telescope find_files<cr>\", { desc = \"Find files (Ctrl+P)\" })

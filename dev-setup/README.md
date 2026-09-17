@@ -157,7 +157,7 @@ One multiplexer is installed depending on your choice — herdr is the default r
 | `Space+e` | Toggle file tree |
 | `Ctrl+T` | Toggle terminal |
 | `Ctrl+S` | Save file |
-| `Space+q` | Close buffer |
+| `Space+bd` | Close buffer |
 | `Shift+H` / `Shift+L` | Prev / next buffer |
 | `Ctrl+W l` / `Ctrl+W h` | Move focus editor ↔ explorer |
 | `F12` | Go to definition |
