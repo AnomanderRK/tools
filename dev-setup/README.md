@@ -159,6 +159,8 @@ One multiplexer is installed depending on your choice — herdr is the default r
 | `Ctrl+S` | Save file |
 | `Space+bd` | Close buffer |
 | `Shift+H` / `Shift+L` | Prev / next buffer |
+| `Shift+Left` / `Shift+Right` | Scroll buffer horizontally (4 cols) |
+| `Shift+ScrollUp` / `Shift+ScrollDown` | Scroll buffer horizontally (4 cols per notch) |
 | `Ctrl+W l` / `Ctrl+W h` | Move focus editor ↔ explorer |
 | `F12` | Go to definition |
 | `Shift+F12` | Find references |
