@@ -460,6 +460,9 @@ vim.api.nvim_create_autocmd(\"FileType\", {
   end,
 })
 
+-- ── UI toggles ───────────────────────────────────────────────────────────────
+map(\"n\", \"<leader>uw\", \"<cmd>set wrap!<cr>\", { desc = \"Toggle wrap\" })
+
 -- ── File path copy ───────────────────────────────────────────────────────────
 map(\"n\", \"<leader>yp\", function() vim.fn.setreg(\"+\", vim.fn.expand(\"%:p\")) end, { desc = \"Copy absolute path\" })
 map(\"n\", \"<leader>yr\", function() vim.fn.setreg(\"+\", vim.fn.expand(\"%:.\")) end,  { desc = \"Copy relative path\" })
