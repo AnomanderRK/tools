@@ -460,10 +460,6 @@ vim.api.nvim_create_autocmd(\"FileType\", {
   end,
 })
 
--- ── Horizontal scroll (Shift+arrows, Shift+scroll blocked by herdr) ──────────
-map(\"n\", \"<S-Left>\",  \"4zh\", { desc = \"Scroll left\" })
-map(\"n\", \"<S-Right>\", \"4zl\", { desc = \"Scroll right\" })
-
 -- ── File path copy ───────────────────────────────────────────────────────────
 map(\"n\", \"<leader>yp\", function() vim.fn.setreg(\"+\", vim.fn.expand(\"%:p\")) end, { desc = \"Copy absolute path\" })
 map(\"n\", \"<leader>yr\", function() vim.fn.setreg(\"+\", vim.fn.expand(\"%:.\")) end,  { desc = \"Copy relative path\" })
