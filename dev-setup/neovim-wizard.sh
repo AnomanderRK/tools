@@ -841,6 +841,25 @@ TOOLS_LUA="return {
         layout_config = { horizontal = { preview_width = 0.55 } },
       },
     },
+    keys = {
+      -- Space+s. : grep including hidden dirs (.github, etc.) but excluding
+      -- .git internals, virtualenvs, and node_modules
+      {
+        \"<leader>s.\",
+        function()
+          require(\"telescope.builtin\").live_grep({
+            additional_args = {
+              \"--hidden\",
+              \"--glob\", \"!.git/\",
+              \"--glob\", \"!.venv/\",
+              \"--glob\", \"!venv/\",
+              \"--glob\", \"!node_modules/\",
+            },
+          })
+        end,
+        desc = \"Search all (incl. hidden)\",
+      },
+    },
   },
 
   -- Treesitter: syntax highlight + code-aware features

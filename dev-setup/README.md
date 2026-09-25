@@ -154,6 +154,7 @@ One multiplexer is installed depending on your choice — herdr is the default r
 | `Ctrl+P` | Find files |
 | `Ctrl+Shift+P` | Commands palette |
 | `Space+/` | Search in files |
+| `Space+s.` | Search all files including hidden dirs (`.github`, etc.) |
 | `Space+e` | Toggle file tree |
 | `Ctrl+T` | Toggle terminal |
 | `Ctrl+S` | Save file |
