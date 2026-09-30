@@ -929,6 +929,14 @@ goto          = \"prefix+S\"
 reload_config = \"prefix+r\"
 detach        = \"prefix+d\"
 
+# ── Workspace navigation (prefix + [ / ]) ────────────────────────────────────
+previous_workspace = \"prefix+[\"
+next_workspace     = \"prefix+]\"
+
+# ── Agent navigation (prefix + , / .) ────────────────────────────────────────
+previous_agent = \"prefix+,\"
+next_agent     = \"prefix+.\"
+
 # ── Custom commands (must be last — TOML array tables absorb subsequent keys) ─
 
 [[keys.command]]

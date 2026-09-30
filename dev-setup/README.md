@@ -506,6 +506,10 @@ Reattach after disconnect: run `herdr` again in any terminal.
 | `Prefix + N` | New workspace |
 | `Prefix + w` | Workspace picker |
 | `Prefix + S` | Session navigator |
+| `Prefix + [` | Previous workspace |
+| `Prefix + ]` | Next workspace |
+| `Prefix + ,` | Previous agent |
+| `Prefix + .` | Next agent |
 | `Prefix + Shift+G` | New git worktree |
 | `Prefix + A` | Launch Claude Code in new pane |
 | `Prefix + r` | Reload `~/.config/herdr/config.toml` |
