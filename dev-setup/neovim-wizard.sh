@@ -467,6 +467,20 @@ map(\"n\", \"<leader>uw\", \"<cmd>set wrap!<cr>\", { desc = \"Toggle wrap\" })
 map(\"n\", \"<leader>yp\", function() vim.fn.setreg(\"+\", vim.fn.expand(\"%:p\")) end, { desc = \"Copy absolute path\" })
 map(\"n\", \"<leader>yr\", function() vim.fn.setreg(\"+\", vim.fn.expand(\"%:.\")) end,  { desc = \"Copy relative path\" })
 map(\"n\", \"<leader>yf\", function() vim.fn.setreg(\"+\", vim.fn.expand(\"%:t\")) end,  { desc = \"Copy filename\" })
+
+-- ── DiffView: compare branch vs origin/main ──────────────────────────────────
+map(\"n\", \"<leader>gm\", function()
+  vim.fn.jobstart(\"git fetch origin main\", {
+    on_exit = function(_, code)
+      if code == 0 then
+        vim.schedule(function() vim.cmd(\"DiffviewOpen origin/main...HEAD\") end)
+      else
+        vim.notify(\"git fetch failed\", vim.log.levels.WARN)
+      end
+    end,
+  })
+end, { desc = \"Diff vs origin/main (fetch first)\" })
+map(\"n\", \"<leader>gM\", \"<cmd>DiffviewClose<cr>\", { desc = \"Close DiffView\" })
 $LAZYGIT_KEYMAP
 "
 write_file "$HOME/.config/nvim/lua/config/keymaps.lua" "$KEYMAPS_LUA"
