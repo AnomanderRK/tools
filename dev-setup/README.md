@@ -364,7 +364,9 @@ k logs $(kubectl get pods | fzf)    # fuzzy-pick a pod to tail
 
 ```bash
 acd / acdal / acdas / acdaw   # argocd / app list / app sync / app wait
-argo_sync my-app               # sync + wait --health in one command
+argo_sync my-app               # sync + wait --health (120s timeout)
+argo_sync my-app 300           # sync + wait --health with custom timeout (seconds)
+argo_sync_only my-app          # sync only, no health wait (useful for apps with Secret resources)
 argo_logs my-app               # stream live app logs
 ```
 

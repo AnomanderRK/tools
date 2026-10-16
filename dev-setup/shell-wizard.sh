@@ -327,7 +327,8 @@ if command -v argocd &>/dev/null; then
   alias acdaw="argocd app wait"
   alias acdah="argocd app history"
 
-  argo_sync() { argocd app sync "$1" && argocd app wait "$1" --health; }
+  argo_sync() { argocd app sync "$1" && argocd app wait "$1" --health --timeout "${2:-120}"; }
+  argo_sync_only() { argocd app sync "$1"; }
   argo_logs()  { argocd app logs "$1" --follow; }
 fi'
 fi
@@ -1317,7 +1318,9 @@ echo -e "    k / kgp / klf      kubectl / get pods / logs -f"
 echo -e "    kctx / kns         switch context / namespace"
 echo -e "    klns <ns> <pfx>    tail logs by namespace + pod prefix"
 echo -e "    wkns <ns>          watch pods"
-$ARGO_ALIASES && echo -e "    argo_sync <app>    argocd sync + wait --health"
+$ARGO_ALIASES && echo -e "    argo_sync <app>          argocd sync + wait --health (120s timeout)"
+$ARGO_ALIASES && echo -e "    argo_sync <app> <secs>   same with custom timeout"
+$ARGO_ALIASES && echo -e "    argo_sync_only <app>     sync only, no health wait"
 echo -e "    explore            Windows Explorer here (WSL)"
 echo
 if [[ "$MUX" == "tmux" ]]; then
