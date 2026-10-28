@@ -476,8 +476,9 @@ if grep -qi microsoft /proc/version 2>/dev/null; then
   wslpath_from_win() { wslpath -u \"\$1\"; }
 fi
 
-# ── Claude Code ───────────────────────────────────────────────
+# ── Claude Code + opencode ────────────────────────────────────
 WORKSPACE_ROOT=\"$WORKSPACE_ROOT\"
+[[ -d \"\$HOME/.opencode/bin\" ]] && pathadd \"\$HOME/.opencode/bin\"
 
 # cc [project] — cd into workspace/project, activate venv, launch claude
 cc() {
@@ -493,6 +494,20 @@ cc() {
   cd \"\$dir\" && _cc_venv && claude
 }
 
+# oc [project] — cd into workspace/project, activate venv, launch opencode
+oc() {
+  if [[ -z \"\${1:-}\" ]]; then
+    _cc_venv && opencode; return
+  fi
+  local dir=\"\$WORKSPACE_ROOT/\$1\"
+  if [[ ! -d \"\$dir\" ]]; then
+    echo \"Not found: \$dir\"
+    echo \"Projects:\"; ls -1 \"\$WORKSPACE_ROOT\" 2>/dev/null
+    return 1
+  fi
+  cd \"\$dir\" && _cc_venv && opencode
+}
+
 _cc_venv() {
   if [[ -d .venv/bin ]];   then source .venv/bin/activate  && echo \"→ .venv\";
   elif [[ -d venv/bin ]];  then source venv/bin/activate   && echo \"→ venv\";
@@ -503,6 +518,7 @@ _cc_complete() {
   COMPREPLY=(\$(compgen -W \"\$(ls -1 \"\$WORKSPACE_ROOT\" 2>/dev/null)\" -- \"\${COMP_WORDS[COMP_CWORD]}\"))
 }
 complete -F _cc_complete cc
+complete -F _cc_complete oc
 
 alias cw='cd \"\$WORKSPACE_ROOT\"'
 "
@@ -879,6 +895,42 @@ else
   else install_fail "lazyworktree" "go install github.com/chmouel/lazyworktree/cmd/lazyworktree@latest"
   fi
 fi
+
+# ── opencode ──────────────────────────────────────────────────────────────────
+echo -en "  ${BOLD}opencode${RESET} (AI coding agent)... "
+if command -v opencode &>/dev/null; then
+  install_skip "$(opencode --version 2>/dev/null || echo 'already installed')"
+elif $DRY_RUN; then install_dry "opencode"
+else
+  if curl -fsSL https://opencode.ai/v2/install | bash >/dev/null 2>&1; then
+    install_ok "installed to ~/.opencode/bin"
+  else install_fail "opencode" "curl -fsSL https://opencode.ai/v2/install | bash"
+  fi
+fi
+
+# ── lazyworktree config ───────────────────────────────────────────────────────
+LAZYWORKTREE_CONFIG='custom_commands:
+  universal:
+    "o":
+      description: Open in herdr workspace
+      show_help: true
+      herdr:
+        mode: workspace
+        attach: true
+        on_exists: switch
+        windows:
+          - name: agents
+            command: opencode
+          - name: nvim
+            command: nvim .
+'
+if ! $DRY_RUN; then
+  mkdir -p "$HOME/.config/lazyworktree"
+  write_file "$HOME/.config/lazyworktree/config.yaml" "$LAZYWORKTREE_CONFIG"
+else
+  info "[dry-run] would write ~/.config/lazyworktree/config.yaml"
+fi
+
 if [[ "$MUX" == "tmux" ]]; then
   echo -en "  ${BOLD}tmux${RESET}... "
   if command -v tmux &>/dev/null; then

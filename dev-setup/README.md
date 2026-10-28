@@ -98,6 +98,7 @@ Sourced from `~/.bashrc` via a single line. Edit `~/.config/dev-setup/bashrc_dev
 | `fzf` | Fuzzy finder — enhances kubectx/kubens, shell history, file picker |
 | `go` | Go toolchain (required for lazyworktree) |
 | `lazyworktree` | TUI for managing git worktrees — create, switch, delete, view PR/CI status |
+| `opencode` | Open source AI coding agent (companion to Claude Code) |
 | `herdr` | Terminal multiplexer for AI agents (via curl installer) |
 | `tmux` | Terminal multiplexer, classic option (via apt) |
 
@@ -207,12 +208,15 @@ Accept with `<Space>ca` (or `:w`), reject with `<Space>cd` (or `:q`).
 
 ## Shell aliases and functions
 
-### Claude Code (from shell-wizard)
+### Claude Code + opencode (from shell-wizard)
 
 ```bash
 cc [project]       # cd into workspace/project, activate venv, launch claude
+oc [project]       # cd into workspace/project, activate venv, launch opencode
 cw                 # cd to workspace root
 ```
+
+Both `cc` and `oc` tab-complete project names from your workspace root.
 
 ### Neovim (from neovim-wizard)
 
@@ -501,8 +505,10 @@ lwt              # press c → type branch name → herdr opens it in a new work
 ```
 
 **Set up the workspace** — in the new workspace open two tabs:
-- Tab named `agents` → `cc` to launch Claude Code
+- Tab named `agents` → `oc` or `cc` to launch opencode or Claude Code
 - Tab named `nvim` → `ccnvim` to open nvim in the worktree directory
+
+Or press `o` in `lwt` to open the worktree automatically with both tabs pre-configured.
 
 Both tools are automatically scoped to the worktree directory.
 
