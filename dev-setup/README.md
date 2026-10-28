@@ -492,6 +492,43 @@ lwt             # alias for lazyworktree
 
 Works alongside herdr's worktree support — use `lazyworktree` to browse and switch, `Prefix+Shift+G` to create directly from herdr.
 
+### Worktree + nvim + agents workflow
+
+**Start a new feature:**
+```bash
+lwt              # press c → type branch name → herdr opens it in a new workspace
+# or: Prefix+Shift+G from herdr directly
+```
+
+**Set up the workspace** — in the new workspace open two tabs:
+- Tab named `agents` → `cc` to launch Claude Code
+- Tab named `nvim` → `ccnvim` to open nvim in the worktree directory
+
+Both tools are automatically scoped to the worktree directory.
+
+**Navigate while working:**
+```
+Prefix+[ / ]     switch between workspaces (feature branch ↔ main)
+Prefix+, / .     jump between agents across workspaces
+Prefix+w         workspace picker — fuzzy search by project name
+```
+
+**Review your changes before pushing:**
+```bash
+gdc              # quick terminal diff vs main
+# or in nvim:
+Space+gm         # full DiffView with file tree + delta highlighting
+Space+gg         # lazygit to stage, commit, push
+```
+
+**Parallel features** — each worktree has its own herdr workspace with independent nvim and agent sessions. Agent status is visible in the sidebar across all workspaces — `Prefix+,/.` jumps to whichever agent needs attention next.
+
+**Clean up after merge:**
+```bash
+lwt    # select the merged worktree → d to delete
+```
+Herdr removes the workspace, the worktree is gone, you're back on main.
+
 ---
 
 ## Terminal multiplexer
