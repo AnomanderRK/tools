@@ -96,6 +96,8 @@ Sourced from `~/.bashrc` via a single line. Edit `~/.config/dev-setup/bashrc_dev
 | `stern` | Multi-pod log tailing across namespaces |
 | `kubectx` + `kubens` | Interactive context and namespace switcher |
 | `fzf` | Fuzzy finder — enhances kubectx/kubens, shell history, file picker |
+| `go` | Go toolchain (required for lazyworktree) |
+| `lazyworktree` | TUI for managing git worktrees — create, switch, delete, view PR/CI status |
 | `herdr` | Terminal multiplexer for AI agents (via curl installer) |
 | `tmux` | Terminal multiplexer, classic option (via apt) |
 
@@ -470,6 +472,24 @@ pbcopy                           # copy to Windows clipboard
 winpath .                        # print Windows path for current dir
 wslpath_from_win 'C:\Users\...'  # convert Windows path to WSL path
 ```
+
+### Git worktrees — lazyworktree
+
+lazyworktree is a keyboard-driven TUI for managing git worktrees. It shows all worktrees with their branch, PR/CI status (via `gh`), and lets you create, switch, and delete them interactively.
+
+```bash
+lazyworktree    # open TUI in current repo
+```
+
+| Key | Action |
+|---|---|
+| `↑` / `↓` | Navigate worktrees |
+| `Enter` | Switch to selected worktree |
+| `c` | Create new worktree from branch/PR |
+| `d` | Delete worktree |
+| `?` | Help |
+
+Works alongside herdr's worktree support — use `lazyworktree` to browse and switch, `Prefix+Shift+G` to create directly from herdr.
 
 ---
 

@@ -363,6 +363,11 @@ if [[ -d \"\$HOME/.pyenv\" ]]; then
   eval \"\$(pyenv virtualenv-init -)\" 2>/dev/null || true
 fi
 
+# ── Go ────────────────────────────────────────────────────────
+[[ -d \"\$HOME/.local/go/bin\" ]] && pathadd \"\$HOME/.local/go/bin\"
+export GOPATH=\"\$HOME/.local/share/go\"
+[[ -d \"\$GOPATH/bin\" ]] && pathadd \"\$GOPATH/bin\"
+
 # ── uv ────────────────────────────────────────────────────────
 [[ -d \"\$HOME/.local/share/uv/bin\" ]] && pathadd \"\$HOME/.local/share/uv/bin\"
 if command -v uv &>/dev/null; then
@@ -843,6 +848,34 @@ else
   if curl -fsSL "$FZF_URL" | tar -xz -C "$INSTALL_DIR" fzf 2>/dev/null; then
     install_ok "installed ${FZF_TAG}"
   else install_fail "fzf" "https://github.com/junegunn/fzf/releases"
+  fi
+fi
+
+# ── Go ────────────────────────────────────────────────────────────────────────
+echo -en "  ${BOLD}go${RESET} (required for lazyworktree)... "
+if [[ -x "$HOME/.local/go/bin/go" ]]; then
+  install_skip "$("$HOME/.local/go/bin/go" version 2>/dev/null)"
+elif $DRY_RUN; then install_dry "go"
+else
+  GO_VER=$(curl -fsSL "https://go.dev/dl/?mode=json" | grep -o '"version":"go[^"]*"' | head -1 | cut -d'"' -f4)
+  GO_URL="https://go.dev/dl/${GO_VER}.linux-amd64.tar.gz"
+  if curl -fsSL "$GO_URL" | tar -xz -C "$HOME/.local" 2>/dev/null; then
+    install_ok "installed ${GO_VER} to ~/.local/go"
+  else install_fail "go" "https://go.dev/dl/"
+  fi
+fi
+
+# ── lazyworktree ──────────────────────────────────────────────────────────────
+echo -en "  ${BOLD}lazyworktree${RESET} (git worktree TUI)... "
+if command -v lazyworktree &>/dev/null; then
+  install_skip "$(lazyworktree --version 2>/dev/null || echo 'already installed')"
+elif $DRY_RUN; then install_dry "lazyworktree"
+else
+  if PATH="$HOME/.local/go/bin:$PATH" GOPATH="$HOME/.local/share/go" \
+      go install github.com/chmouel/lazyworktree/cmd/lazyworktree@latest 2>/dev/null; then
+    ln -sf "$HOME/.local/share/go/bin/lazyworktree" "$INSTALL_DIR/lazyworktree" 2>/dev/null || true
+    install_ok "installed via go install"
+  else install_fail "lazyworktree" "go install github.com/chmouel/lazyworktree/cmd/lazyworktree@latest"
   fi
 fi
 if [[ "$MUX" == "tmux" ]]; then
