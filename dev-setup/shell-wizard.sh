@@ -976,7 +976,9 @@ else
 fi
 
 # ── lazyworktree config ───────────────────────────────────────────────────────
-LAZYWORKTREE_CONFIG='custom_commands:
+LAZYWORKTREE_CONFIG='worktree_dir: ~/worktrees
+
+custom_commands:
   universal:
     "o":
       description: Open in herdr workspace
@@ -993,6 +995,7 @@ LAZYWORKTREE_CONFIG='custom_commands:
 '
 if ! $DRY_RUN; then
   mkdir -p "$HOME/.config/lazyworktree"
+  mkdir -p "$HOME/worktrees/work" "$HOME/worktrees/personal" "$HOME/worktrees/scratch"
   write_file "$HOME/.config/lazyworktree/config.yaml" "$LAZYWORKTREE_CONFIG"
 else
   info "[dry-run] would write ~/.config/lazyworktree/config.yaml"
@@ -1235,7 +1238,7 @@ redraw_on_focus_gained = true
 resume_agents_on_restore = true  # AI agents resume their sessions after restart
 
 [worktrees]
-directory = \"$WORKSPACE_ROOT\"   # herdr looks here when creating git worktrees
+directory = \"$HOME/worktrees\"   # herdr looks here when creating git worktrees
 
 [keys]
 prefix = \"ctrl+b\"

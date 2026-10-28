@@ -484,6 +484,14 @@ wslpath_from_win 'C:\Users\...'  # convert Windows path to WSL path
 
 lazyworktree is a keyboard-driven TUI for managing git worktrees. It shows all worktrees with their branch, PR/CI status (via `gh`), and lets you create, switch, and delete them interactively.
 
+Worktrees are stored under `~/worktrees/` with three subdirectories:
+
+| Directory | Purpose |
+|---|---|
+| `~/worktrees/work/` | Work repository branches |
+| `~/worktrees/personal/` | Personal project branches |
+| `~/worktrees/scratch/` | Throwaway / experimental branches |
+
 ```bash
 lazyworktree    # open TUI in current repo
 lwt             # alias for lazyworktree
