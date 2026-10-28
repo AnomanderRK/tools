@@ -479,6 +479,7 @@ lazyworktree is a keyboard-driven TUI for managing git worktrees. It shows all w
 
 ```bash
 lazyworktree    # open TUI in current repo
+lwt             # alias for lazyworktree
 ```
 
 | Key | Action |

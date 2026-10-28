@@ -367,6 +367,7 @@ fi
 [[ -d \"\$HOME/.local/go/bin\" ]] && pathadd \"\$HOME/.local/go/bin\"
 export GOPATH=\"\$HOME/.local/share/go\"
 [[ -d \"\$GOPATH/bin\" ]] && pathadd \"\$GOPATH/bin\"
+command -v lazyworktree &>/dev/null && alias lwt='lazyworktree'
 
 # ── uv ────────────────────────────────────────────────────────
 [[ -d \"\$HOME/.local/share/uv/bin\" ]] && pathadd \"\$HOME/.local/share/uv/bin\"
