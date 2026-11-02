@@ -1,6 +1,6 @@
 # dev-setup
 
-Interactive wizards to configure a terminal-based developer environment on WSL or bare Linux.
+Interactive wizards to configure a terminal-based developer environment on Linux, macOS, or WSL.
 
 ---
 
@@ -11,17 +11,19 @@ Interactive wizards to configure a terminal-based developer environment on WSL o
 | `shell-wizard.sh` | Shell prompt (Starship), Python toolchain, Kubernetes CLI, ArgoCD, Claude Code launcher, herdr or tmux, Windows Terminal theming |
 | `neovim-wizard.sh` | Neovim + LazyVim: editor, LSPs, formatter, linter, Claude Code integration |
 
+`shell-wizard.sh` asks at the start whether to also run `neovim-wizard.sh` afterwards, so one run can set up both. Both wizards support Linux, macOS, and WSL.
+
 Both wizards share a `lib/helpers.sh` library and follow the same pattern: gather all questions upfront, show a summary, confirm once, then write everything.
 
 ---
 
 ## Requirements
 
-- Bash 4+
+- Bash 3.2+ (macOS default works); zsh is supported as the interactive shell
 - `curl`
 - `python3` (for Windows Terminal patching, available in all Ubuntu WSL distros)
 - `git`
-- `sudo` / `apt` (for ripgrep, fd-find, tmux)
+- Linux/WSL: `sudo` / `apt` (for ripgrep, fd-find, tmux). macOS: [Homebrew](https://brew.sh) (only needed for tmux)
 
 Everything else is installed by the wizards.
 
@@ -56,10 +58,10 @@ bash ~/dev-setup/neovim-wizard.sh --dry-run   # preview only
 ### Activate changes in the current terminal
 
 ```bash
-source ~/.bashrc
+source ~/.bashrc   # or ~/.zshrc (zsh) / ~/.bash_profile (bash on macOS)
 ```
 
-New terminals pick up the config automatically.
+The shell wizard detects your shell and OS and wires into the right rc file. New terminals pick up the config automatically.
 
 ---
 
@@ -99,10 +101,11 @@ Sourced from `~/.bashrc` via a single line. Edit `~/.config/dev-setup/bashrc_dev
 | `go` | Go toolchain (required for lazyworktree) |
 | `lazyworktree` | TUI for managing git worktrees — create, switch, delete, view PR/CI status |
 | `opencode` | Open source AI coding agent (companion to Claude Code) |
-| `herdr` | Terminal multiplexer for AI agents (via curl installer) |
+| `herdr` | Terminal multiplexer for AI agents, TUI edition (via curl installer) |
+| `herdr-app` + `herdr-core` | herdr native desktop UI and its terminal runtime (via curl installer) |
 | `tmux` | Terminal multiplexer, classic option (via apt) |
 
-One multiplexer is installed depending on your choice — herdr is the default recommendation. Already-installed tools are detected and skipped.
+One multiplexer is installed depending on your choice — herdr is the default recommendation (TUI, UI, or both). Already-installed tools are detected and skipped.
 
 ### Windows Terminal (WSL only)
 
@@ -119,7 +122,7 @@ One multiplexer is installed depending on your choice — herdr is the default r
 | Tool | Purpose |
 |---|---|
 | `neovim` | Editor (latest stable, from GitHub releases) |
-| `node` + `npm` | Required by most LSP servers (via nvm) |
+| `node` + `npm` | Mason installs the `pyright`, `ts_ls` and `bashls` language servers with npm; also used by the `neovim` npm provider, the Markdown preview build, and Copilot. Optional: the wizard asks, and reuses an existing Node (via nvm otherwise) |
 | `ripgrep` | Fast search, used by Telescope |
 | `fd` | Fast file finder, used by Telescope |
 | `lazygit` | TUI git client (optional) |
@@ -148,7 +151,7 @@ One multiplexer is installed depending on your choice — herdr is the default r
 | `~/.config/lazygit/config.yml` | lazygit config (delta pager wired in if both installed) |
 | `~/.config/nvim/lua/plugins/extras.lua` | claudecode.nvim, markdown, surround, todo, trouble, diffview, oil, typescript-tools |
 | `~/.config/dev-setup/bashrc_neovim.sh` | Shell aliases and functions |
-| `~/.bashrc` | Gets one `source` line appended |
+| `~/.bashrc` / `~/.zshrc` / `~/.bash_profile` | Gets one `source` line appended (zsh → `.zshrc`; bash → `.bashrc`, or `.bash_profile` on macOS) |
 
 ### Keybindings (VSCode-style)
 
@@ -545,9 +548,35 @@ The wizard offers three options: **herdr** (default), **tmux**, or skip.
 
 herdr is an agent-aware terminal multiplexer built for AI coding workflows. Panes are automatically tagged as *working*, *blocked*, or *idle*, and you're alerted when an agent needs input. Sessions persist through disconnects and can be reattached from SSH or a mobile web UI.
 
-Install: `curl -fsSL https://herdr.dev/install.sh | sh`
+The wizard asks which edition to install:
 
-Config written to: `~/.config/herdr/config.toml`
+| Edition | Install | Config |
+|---|---|---|
+| **TUI** (default) | `curl -fsSL https://herdr.dev/install.sh \| sh` | `~/.config/herdr/config.toml` (written by the wizard) |
+| **UI** (native app + `herdr-core`) | `curl -fsSL https://releases.herdr.dev/app/install.sh \| sh` | `~/.config/herdr-app/` (managed by the app; not written by the wizard) |
+| **both** | both of the above | both |
+
+The UI runs terminals through `herdr-core` (`hc`), which the app installer adds if missing. The UI self-updates. The wizard also writes your chosen color theme as `~/.config/herdr-app/themes/dev-setup-<theme>.json`, installs the CaskaydiaCove Nerd Font Mono (`~/Library/Fonts` on macOS, `~/.local/share/fonts` on Linux), and sets `theme` and `font` in `settings.json`. The UI has no `ctrl+b` prefix mode: its shortcuts are `cmd-` chords from `keys.json` (`cmd-d` split, `cmd-t` new tab, `cmd-alt-arrows` move between panes). The wizard also enables the **Files** and **Changes** side panels by setting `"workspace.panels": ["files", "changes"]` in `~/.config/herdr-app/shared.json` (quit `herdr-app` first, or it may overwrite the file). The TUI and UI don't share agents. UI limits: Apple Silicon only on macOS (Intel must build from source). If `~/.local/state` is root-owned, core fails with "Permission denied"; fix with `sudo chown -R "$USER" ~/.local/state`. The keybindings, worktree-restore snippet, and Claude integration below apply to the TUI only.
+
+#### UI keyboard shortcuts
+
+The UI has **no `ctrl+b` prefix mode**. It only supports single chords from `~/.config/herdr-app/keys.json`, so the TUI's `prefix + key` bindings do not exist there. The wizard merges prefix-free pane keys into `keys.json` (your other keys stay as they are, and re-running is safe):
+
+| Action | macOS | Linux / WSL |
+|---|---|---|
+| Focus pane left / down / up / right | `Cmd+Ctrl + h / j / k / l` | `Ctrl+Shift + h / j / k / l` |
+| Split right / down | `Cmd+Ctrl + o / e` | `Ctrl+Shift + o / e` |
+| New tab | `Cmd+T` (app default) | `Ctrl+Shift+T` (added) |
+
+Other macOS defaults from the app: `Cmd+D` split right, `Cmd+Shift+D` split down, `Cmd+Alt+arrows` focus pane, `Cmd+1..9` select tab, `Ctrl+1..9` select space, `Cmd+B` toggle sidebar, `Cmd+Shift+P` command palette, `Cmd+/` help. On Linux/WSL, open the help (`app.help`) or command palette to see the app's own defaults for your platform.
+
+Notes:
+- **Why those modifiers:** plain `Ctrl+letter` belongs to the program in the terminal (readline, nvim), and on many Mac keyboards `Option+letter` types characters like `[` or `@`. `Ctrl` + `Alt` is AltGr on Windows. So the wizard uses `Cmd+Ctrl` on macOS and `Ctrl+Shift` elsewhere.
+- **Files / Changes panels:** reachable by mouse or `layout.toggle`, but not by pane-focus keys (their `mod.json` is not `focusable`).
+- **Fresh install:** `keys.json` is created the first time the app runs. If the wizard says it doesn't exist yet, launch `herdr-app` once and re-run the wizard.
+- **Customize:** edit `keys.json` (changes apply live). Run `herdr-app commands` to list every action, for example `pane.go:left`, `pane.split:right`, `tab.select:2`. If a key breaks things, `Ctrl+Alt+Shift+Esc` resets the layout and `keys.json`.
+- **macOS conflicts:** the system or another app may already own a chord. Remap in `keys.json`.
+- **WSL:** the wizard installs the Linux build, which runs under WSLg (so the Linux column applies). A native Windows install of the UI (`install.ps1`) keeps its config on the Windows side and is not configured by this wizard.
 
 Start a session:
 
@@ -686,7 +715,7 @@ To switch themes, re-run the relevant wizard and pick a different one.
 |---|---|
 | `~/.config/starship.toml` | Starship prompt config |
 | `~/.config/dev-setup/bashrc_devsetup.sh` | All aliases and functions |
-| `~/.config/herdr/config.toml` | herdr config (if herdr chosen) |
+| `~/.config/herdr/config.toml` | herdr TUI config (if herdr TUI chosen) |
 | `~/.claude/hooks/herdr-agent-state.sh` | herdr Claude integration hook (if herdr chosen) |
 | `~/.tmux.conf` | tmux config (if tmux chosen) |
 | `~/.bashrc` | Gets one `source` line appended |

@@ -93,3 +93,26 @@ install_ok()   { ok "$1"; }
 install_skip() { ok "Already installed: $1"; }
 install_fail() { warn "Failed: $1 — $2"; }
 install_dry()  { info "[dry-run] would install: $1"; }
+
+# ─── Platform detection ───────────────────────────────────────────────────────
+# Sets: OS (linux|macos), IS_WSL, ARCH (amd64|arm64), ARCH_ALT (x86_64|arm64),
+#       OS_GO (linux|darwin), OS_TITLE (Linux|Darwin), USER_SHELL (bash|zsh), RC_FILE
+detect_platform() {
+  case "$(uname -s)" in
+    Darwin) OS=macos; OS_GO=darwin; OS_TITLE=Darwin ;;
+    *)      OS=linux; OS_GO=linux;  OS_TITLE=Linux ;;
+  esac
+  case "$(uname -m)" in
+    arm64|aarch64) ARCH=arm64; ARCH_ALT=arm64 ;;
+    *)             ARCH=amd64; ARCH_ALT=x86_64 ;;
+  esac
+  IS_WSL=false
+  [[ "$OS" == "linux" ]] && grep -qi microsoft /proc/version 2>/dev/null && IS_WSL=true
+
+  case "$(basename "${SHELL:-bash}")" in
+    zsh) USER_SHELL=zsh; RC_FILE="$HOME/.zshrc" ;;
+    *)   USER_SHELL=bash
+         # macOS login shells read .bash_profile, not .bashrc
+         if [[ "$OS" == "macos" ]]; then RC_FILE="$HOME/.bash_profile"; else RC_FILE="$HOME/.bashrc"; fi ;;
+  esac
+}

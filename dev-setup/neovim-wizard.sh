@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # neovim-wizard.sh — Neovim + LazyVim setup wizard
+# Platforms: Linux, macOS, WSL.
 # Installs Neovim, Node.js, ripgrep, fd, and writes a full LazyVim config
 # tuned for Python, React Native, and Claude Code integration.
 #
@@ -15,6 +16,8 @@ DRY_RUN=false
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/helpers.sh
 source "$SCRIPT_DIR/lib/helpers.sh"
+detect_platform
+RC_FILE_SHORT="~${RC_FILE#$HOME}"
 
 # ─── Banner ───────────────────────────────────────────────────────────────────
 echo
@@ -53,6 +56,9 @@ case "$THEME_LABEL" in
 esac
 
 DO_NODE=true
+echo -e "  ${DIM}Why Node.js? Mason installs the pyright (Python), ts_ls (TypeScript) and bashls (Bash)${RESET}"
+echo -e "  ${DIM}language servers with npm. Node is also used by the 'neovim' npm provider, the Markdown${RESET}"
+echo -e "  ${DIM}preview build, and Copilot. Skipping it loses those. An existing Node is reused.${RESET}"
 if ! ask_yn "Install Node.js via nvm? (required for TypeScript/Python/Bash LSP servers)" y; then
   DO_NODE=false
 fi
@@ -103,6 +109,13 @@ echo
 
 INSTALL_DIR="$HOME/.local/bin"
 mkdir -p "$INSTALL_DIR"
+# Rust-style target triple used by ripgrep/fd (macOS) and delta
+if [[ "$OS" == "macos" ]]; then
+  if [[ "$ARCH" == "arm64" ]]; then MAC_TRIPLE="aarch64-apple-darwin"; else MAC_TRIPLE="x86_64-apple-darwin"; fi
+  DELTA_TRIPLE="$MAC_TRIPLE"
+elif [[ "$ARCH" == "arm64" ]]; then DELTA_TRIPLE="aarch64-unknown-linux-gnu"
+else DELTA_TRIPLE="x86_64-unknown-linux-musl"
+fi
 OUTDIR="$HOME/.config/dev-setup"
 mkdir -p "$OUTDIR"
 
@@ -120,13 +133,8 @@ elif $DRY_RUN; then
   install_dry "neovim"
 else
   NV_TAG=$(curl -fsSL https://api.github.com/repos/neovim/neovim/releases/latest \
-    | grep '"tag_name"' | cut -d'"' -f4)
-  ARCH=$(uname -m)
-  if [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
-    NV_ASSET="nvim-linux-arm64"
-  else
-    NV_ASSET="nvim-linux-x86_64"
-  fi
+    | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)
+  NV_ASSET="nvim-${OS_GO/darwin/macos}-${ARCH_ALT}"   # nvim-linux-x86_64, nvim-macos-arm64, ...
   NV_URL="https://github.com/neovim/neovim/releases/download/${NV_TAG}/${NV_ASSET}.tar.gz"
   if curl -fsSL "$NV_URL" | tar -xz -C "$HOME/.local" --strip-components=1 2>/dev/null; then
     install_ok "installed ${NV_TAG}"
@@ -187,10 +195,20 @@ if command -v rg &>/dev/null; then
 elif $DRY_RUN; then
   install_dry "ripgrep"
 else
-  if sudo apt-get install -y ripgrep >/dev/null 2>&1; then
+  if [[ "$OS" == "macos" ]]; then
+    RG_TAG=$(curl -fsSL https://api.github.com/repos/BurntSushi/ripgrep/releases/latest \
+      | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)
+    RG_DIR="ripgrep-${RG_TAG}-${MAC_TRIPLE}"
+    if curl -fsSL "https://github.com/BurntSushi/ripgrep/releases/download/${RG_TAG}/${RG_DIR}.tar.gz" \
+        | tar -xz --strip-components=1 -C "$INSTALL_DIR" "${RG_DIR}/rg" 2>/dev/null; then
+      install_ok "installed ${RG_TAG}"
+    else
+      install_fail "ripgrep" "https://github.com/BurntSushi/ripgrep/releases"
+    fi
+  elif sudo apt-get install -y ripgrep >/dev/null 2>&1; then
     install_ok "installed via apt"
   else
-    install_fail "ripgrep" "sudo apt install ripgrep"
+    install_fail "ripgrep" "install ripgrep with your package manager (e.g. sudo apt install ripgrep)"
   fi
 fi
 
@@ -207,11 +225,21 @@ if command -v fd &>/dev/null || command -v fdfind &>/dev/null; then
 elif $DRY_RUN; then
   install_dry "fd-find"
 else
-  if sudo apt-get install -y fd-find >/dev/null 2>&1; then
+  if [[ "$OS" == "macos" ]]; then
+    FD_TAG=$(curl -fsSL https://api.github.com/repos/sharkdp/fd/releases/latest \
+      | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)
+    FD_DIR="fd-${FD_TAG}-${MAC_TRIPLE}"
+    if curl -fsSL "https://github.com/sharkdp/fd/releases/download/${FD_TAG}/${FD_DIR}.tar.gz" \
+        | tar -xz --strip-components=1 -C "$INSTALL_DIR" "${FD_DIR}/fd" 2>/dev/null; then
+      install_ok "installed ${FD_TAG}"
+    else
+      install_fail "fd" "https://github.com/sharkdp/fd/releases"
+    fi
+  elif sudo apt-get install -y fd-find >/dev/null 2>&1; then
     ln -sf "$(command -v fdfind)" "$INSTALL_DIR/fd" 2>/dev/null || true
     install_ok "installed via apt (symlinked as fd)"
   else
-    install_fail "fd-find" "sudo apt install fd-find"
+    install_fail "fd-find" "install fd with your package manager (e.g. sudo apt install fd-find)"
   fi
 fi
 
@@ -224,9 +252,9 @@ if $DO_LAZYGIT; then
     install_dry "lazygit"
   else
     LG_TAG=$(curl -fsSL https://api.github.com/repos/jesseduffield/lazygit/releases/latest \
-      | grep '"tag_name"' | cut -d'"' -f4)
+      | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)
     LG_VER="${LG_TAG#v}"
-    LG_URL="https://github.com/jesseduffield/lazygit/releases/download/${LG_TAG}/lazygit_${LG_VER}_Linux_x86_64.tar.gz"
+    LG_URL="https://github.com/jesseduffield/lazygit/releases/download/${LG_TAG}/lazygit_${LG_VER}_${OS_TITLE}_${ARCH_ALT}.tar.gz"
     if curl -fsSL "$LG_URL" | tar -xz -C "$INSTALL_DIR" lazygit 2>/dev/null; then
       install_ok "installed ${LG_TAG}"
     else
@@ -258,11 +286,11 @@ elif $DRY_RUN; then
   install_dry "delta"
 else
   DELTA_TAG=$(curl -fsSL https://api.github.com/repos/dandavison/delta/releases/latest \
-    | grep '"tag_name"' | cut -d'"' -f4)
+    | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)
   DELTA_VER="${DELTA_TAG#v}"
-  DELTA_URL="https://github.com/dandavison/delta/releases/download/${DELTA_TAG}/delta-${DELTA_VER}-x86_64-unknown-linux-musl.tar.gz"
+  DELTA_URL="https://github.com/dandavison/delta/releases/download/${DELTA_TAG}/delta-${DELTA_VER}-${DELTA_TRIPLE}.tar.gz"
   if curl -fsSL "$DELTA_URL" | tar -xz --strip-components=1 -C "$INSTALL_DIR" \
-      "delta-${DELTA_VER}-x86_64-unknown-linux-musl/delta" 2>/dev/null; then
+      "delta-${DELTA_VER}-${DELTA_TRIPLE}/delta" 2>/dev/null; then
     install_ok "installed ${DELTA_TAG}"
   else
     install_fail "delta" "https://github.com/dandavison/delta/releases"
@@ -335,9 +363,6 @@ require("lazy").setup({
 write_file "$HOME/.config/nvim/lua/config/lazy.lua" "$LAZY_LUA"
 
 # ── lua/config/options.lua ────────────────────────────────────────────────────
-IS_WSL=false
-grep -qi microsoft /proc/version 2>/dev/null && IS_WSL=true
-
 if $IS_WSL; then
   CLIPBOARD_BLOCK='-- WSL clipboard: copy via clip.exe, paste via powershell
 vim.g.clipboard = {
@@ -948,7 +973,7 @@ EXTRAS_LUA='return {
       { "<leader>mp", "<cmd>MarkdownPreviewToggle<cr>", ft = "markdown", desc = "Markdown preview (browser)" },
     },
     init = function()
-      vim.g.mkdp_browser    = "explorer.exe"  -- WSL: open in Windows default browser
+      vim.g.mkdp_browser    = (vim.fn.has("wsl") == 1) and "explorer.exe" or ""  -- WSL: Windows browser; else system default
       vim.g.mkdp_auto_close = 1               -- close browser tab when leaving buffer
       vim.g.mkdp_refresh_slow = 0             -- live sync
     end,
@@ -1099,7 +1124,7 @@ alias vim="nvim"'
 fi
 
 BASHRC_NEOVIM="# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Neovim setup snippet — sourced from ~/.bashrc
+# Neovim setup snippet — sourced from your shell rc file (bash or zsh)
 # Edit this file directly; changes take effect on next shell open.
 # Generated by neovim-wizard.sh
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1113,7 +1138,7 @@ $ALIAS_BLOCK
 # ── nvm (Node.js version manager) ─────────────────────────────────────────────
 export NVM_DIR=\"\$HOME/.nvm\"
 [[ -s \"\$NVM_DIR/nvm.sh\" ]] && source \"\$NVM_DIR/nvm.sh\"
-[[ -s \"\$NVM_DIR/bash_completion\" ]] && source \"\$NVM_DIR/bash_completion\"
+[[ -n \"\${BASH_VERSION:-}\" && -s \"\$NVM_DIR/bash_completion\" ]] && source \"\$NVM_DIR/bash_completion\"
 
 # ── ccnvim: cd to project, activate venv, open in nvim ───────────────────────
 # Usage: ccnvim my-project    (uses WORKSPACE_ROOT from shell-wizard)
@@ -1133,16 +1158,21 @@ ccnvim() {
   cd \"\$dir\" && { _cc_venv 2>/dev/null || true; } && nvim .
 }
 
-_ccnvim_complete() {
-  local base=\"\${WORKSPACE_ROOT:-\$HOME/github}\"
-  COMPREPLY=(\$(compgen -W \"\$(ls -1 \"\$base\" 2>/dev/null)\" -- \"\${COMP_WORDS[COMP_CWORD]}\"))
-}
-complete -F _ccnvim_complete ccnvim
+if [[ -n \"\${ZSH_VERSION:-}\" ]]; then
+  _ccnvim_complete() { compadd -- \$(ls -1 \"\${WORKSPACE_ROOT:-\$HOME/github}\" 2>/dev/null); }
+  (( \$+functions[compdef] )) && compdef _ccnvim_complete ccnvim
+else
+  _ccnvim_complete() {
+    local base=\"\${WORKSPACE_ROOT:-\$HOME/github}\"
+    COMPREPLY=(\$(compgen -W \"\$(ls -1 \"\$base\" 2>/dev/null)\" -- \"\${COMP_WORDS[COMP_CWORD]}\"))
+  }
+  complete -F _ccnvim_complete ccnvim
+fi
 "
 write_file "$OUTDIR/bashrc_neovim.sh" "$BASHRC_NEOVIM"
 
-# ── Wire into ~/.bashrc ───────────────────────────────────────────────────────
-say "Wiring into ~/.bashrc"
+# ── Wire into shell rc file ───────────────────────────────────────────────────
+say "Wiring into $RC_FILE"
 
 MARKER="# >>> neovim-setup <<<"
 BASHRC_LINE="
@@ -1150,7 +1180,7 @@ $MARKER
 [[ -f \"\$HOME/.config/dev-setup/bashrc_neovim.sh\" ]] && source \"\$HOME/.config/dev-setup/bashrc_neovim.sh\"
 # <<< neovim-setup >>>
 "
-append_if_missing "$HOME/.bashrc" "$MARKER" "$BASHRC_LINE"
+append_if_missing "$RC_FILE" "$MARKER" "$BASHRC_LINE"
 
 echo
 
@@ -1175,19 +1205,24 @@ echo -e "    ${GREEN}~/.config/nvim/GUIDE.md${RESET}  ← reference guide"
 echo -e "    ${GREEN}~/.config/dev-setup/bashrc_neovim.sh${RESET}"
 echo
 echo -e "  ${BOLD}Next steps:${RESET}"
-echo -e "    1.  ${CYAN}source ~/.bashrc${RESET}"
+echo -e "    1.  ${CYAN}source $RC_FILE_SHORT${RESET}"
 echo -e "    2.  ${CYAN}nvim${RESET}                       first launch (~2 min to download plugins)"
 echo -e "    3.  ${CYAN}:checkhealth${RESET}               inside nvim — diagnose any issues"
 echo -e "    4.  ${CYAN}:Mason${RESET}                     inside nvim — confirm LSPs installed"
 $DO_COPILOT && \
   echo -e "    5.  ${CYAN}:Copilot setup${RESET}             inside nvim — authenticate Copilot"
 echo
-echo -e "  ${BOLD}${YELLOW}Icons look broken? Install the Nerd Font on Windows:${RESET}"
-echo -e "    1.  Open ${CYAN}PowerShell${RESET} (Windows, not WSL)"
-echo -e "    2.  Run:  ${CYAN}Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned${RESET}"
-echo -e "    3.  Run:  ${CYAN}${FONT_SCRIPT_WIN}${RESET}"
-echo -e "    4.  In Windows Terminal → your WSL profile → Appearance → Font face:"
-echo -e "        set to ${CYAN}JetBrainsMono Nerd Font Mono${RESET} and restart the terminal"
+if $IS_WSL; then
+  echo -e "  ${BOLD}${YELLOW}Icons look broken? Install the Nerd Font on Windows:${RESET}"
+  echo -e "    1.  Open ${CYAN}PowerShell${RESET} (Windows, not WSL)"
+  echo -e "    2.  Run:  ${CYAN}Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned${RESET}"
+  echo -e "    3.  Run:  ${CYAN}${FONT_SCRIPT_WIN}${RESET}"
+  echo -e "    4.  In Windows Terminal → your WSL profile → Appearance → Font face:"
+  echo -e "        set to ${CYAN}JetBrainsMono Nerd Font Mono${RESET} and restart the terminal"
+else
+  echo -e "  ${BOLD}${YELLOW}Icons look broken?${RESET} Use a Nerd Font in your terminal (e.g. CaskaydiaCove Nerd Font Mono;"
+  echo -e "  shell-wizard.sh installs it with the herdr UI)."
+fi
 echo
 echo -e "  ${BOLD}Key bindings quick reference:${RESET}"
 echo -e "    ${CYAN}Ctrl+P${RESET}         Find file                   ${DIM}(like VSCode)${RESET}"
