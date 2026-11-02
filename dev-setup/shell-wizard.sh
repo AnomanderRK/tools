@@ -218,7 +218,7 @@ dim    = "#93a1a1"'
   *)
     TM_BG="default"; TM_FG="white"; TM_ACCENT="cyan"
     TM_DIM="brightblack"; TM_YELLOW="yellow"
-    HERDR_THEME="dark"
+    HERDR_THEME="terminal"   # follows the host terminal ANSI palette ("dark" is not a herdr theme)
     PALETTE='
 [palettes.active]
 accent = "cyan"
@@ -1212,12 +1212,15 @@ if [[ "$MUX" == "herdr" ]] && $HERDR_TUI; then
     fi
   fi
 
+  # panes must start the shell the wizard wired its config into (zsh on macOS)
+  HERDR_SHELL="$(command -v "$USER_SHELL" 2>/dev/null || echo /bin/bash)"
+
   HERDR_CONFIG="# ~/.config/herdr/config.toml — shell-wizard.sh | theme: $THEME
 
 onboarding = false
 
 [terminal]
-default_shell = \"/bin/bash\"
+default_shell = \"$HERDR_SHELL\"
 
 [theme]
 name = \"$HERDR_THEME\"
@@ -1315,6 +1318,10 @@ description = \"Launch Claude Code\"
   if ! $DRY_RUN; then
     mkdir -p "$HOME/.config/herdr"
     write_file "$HOME/.config/herdr/config.toml" "$HERDR_CONFIG"
+    # a running herdr server keeps the old theme until its config is reloaded
+    if command -v herdr &>/dev/null && herdr status server &>/dev/null; then
+      herdr server reload-config >/dev/null 2>&1 && ok "Reloaded running herdr config" || true
+    fi
   else
     info "[dry-run] would write ~/.config/herdr/config.toml (theme: $HERDR_THEME)"
   fi
