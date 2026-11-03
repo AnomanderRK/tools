@@ -1075,6 +1075,11 @@ if [[ "$MUX" == "herdr" ]] && $HERDR_UI; then
     else install_fail "herdr UI" "curl -fsSL https://releases.herdr.dev/app/install.sh | sh"
     fi
   fi
+  # herdr-app (Tauri/Qt) needs X11 keyboard library on Linux/WSL — ensure it regardless of install state
+  if [[ "$OS" == "linux" ]] && ! $DRY_RUN && ! ldconfig -p 2>/dev/null | grep -q libxkbcommon-x11; then
+    sudo -n apt-get install -y libxkbcommon-x11-0 >/dev/null 2>&1 || \
+      warn "herdr-app needs libxkbcommon-x11-0: sudo apt install libxkbcommon-x11-0"
+  fi
 
   # Enable the Files and Changes side panels (shared state key "workspace.panels").
   # shared.json is app-written; merge just this key. If the app is running it
@@ -1114,7 +1119,7 @@ PY
     mkdir -p "$FONT_DIR" "$HERDR_APP_DIR/themes"
     if ! ls "$FONT_DIR"/CaskaydiaCoveNerdFontMono-* &>/dev/null; then
       _ft=$(curl -fsSL https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4 || true)
-      _fz="$(mktemp -t nerdfont).zip"
+      _fz="$(mktemp "${TMPDIR:-/tmp}/nerdfontXXXXXX").zip"
       if [[ -n "$_ft" ]] && curl -fsSL "https://github.com/ryanoasis/nerd-fonts/releases/download/${_ft}/CascadiaCode.zip" -o "$_fz" 2>/dev/null; then
         python3 - "$_fz" "$FONT_DIR" <<'FONTPY' 2>/dev/null || true
 import sys, zipfile
